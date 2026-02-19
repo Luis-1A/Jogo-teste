@@ -1,1 +1,1218 @@
-amo porno 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ecos de Aetherion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: 'Cinzel', serif;
+            user-select: none;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+
+        #gameCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .ui-layer {
+            position: fixed;
+            z-index: 10;
+            pointer-events: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .interactive {
+            pointer-events: auto;
+        }
+
+        /* Menu Principal Estilo God of War */
+        #mainMenu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0f0f1e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 1s ease;
+        }
+
+        .title-container {
+            text-align: center;
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        .game-title {
+            font-size: clamp(2rem, 8vw, 4rem);
+            color: #e0d5b5;
+            text-shadow: 
+                0 0 20px rgba(224, 213, 181, 0.5),
+                0 0 40px rgba(224, 213, 181, 0.3),
+                0 0 60px rgba(180, 160, 120, 0.2);
+            letter-spacing: 0.2em;
+            animation: titlePulse 4s ease-in-out infinite;
+            position: relative;
+        }
+
+        .subtitle {
+            font-size: clamp(0.8rem, 3vw, 1.2rem);
+            color: #8b9dc3;
+            margin-top: 10px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5em;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { filter: brightness(1) drop-shadow(0 0 30px rgba(255,215,0,0.3)); }
+            50% { filter: brightness(1.2) drop-shadow(0 0 50px rgba(255,215,0,0.6)); }
+        }
+
+        .menu-options {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .menu-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(224, 213, 181, 0.3);
+            color: #e0d5b5;
+            padding: 20px;
+            font-size: 1.1rem;
+            font-family: 'Cinzel', serif;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            backdrop-filter: blur(10px);
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        .menu-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(224, 213, 181, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .menu-btn:hover::before, .menu-btn:active::before {
+            left: 100%;
+        }
+
+        .menu-btn:hover, .menu-btn:active {
+            background: rgba(224, 213, 181, 0.1);
+            border-color: rgba(224, 213, 181, 0.8);
+            transform: scale(1.05) translateZ(20px);
+            box-shadow: 0 10px 40px rgba(224, 213, 181, 0.3);
+        }
+
+        /* HUD do Jogo */
+        #gameHUD {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .hud-top {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .health-bar {
+            width: 200px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #5c4033;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 20px rgba(139, 69, 19, 0.5);
+        }
+
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8b0000, #ff4444, #ff6666);
+            width: 100%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+        }
+
+        .mana-bar {
+            width: 150px;
+            height: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #1e3a5f;
+            border-radius: 8px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .mana-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0a1628, #4a90e2, #87ceeb);
+            width: 100%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+        }
+
+        .minimap {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, rgba(20, 30, 48, 0.9), rgba(0, 0, 0, 0.95));
+            border: 2px solid #5c4033;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .minimap::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: #ffd700;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px #ffd700;
+        }
+
+        .controls-mobile {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 150px;
+            height: 150px;
+            pointer-events: auto;
+        }
+
+        .joystick {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(224, 213, 181, 0.3);
+            border-radius: 50%;
+            position: relative;
+            backdrop-filter: blur(5px);
+        }
+
+        .joystick-knob {
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle at 30% 30%, rgba(224, 213, 181, 0.8), rgba(180, 160, 120, 0.4));
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5), 0 0 20px rgba(224, 213, 181, 0.3);
+            transition: transform 0.1s ease;
+        }
+
+        .action-buttons {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 20px;
+            pointer-events: auto;
+        }
+
+        .action-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(139, 69, 19, 0.3);
+            border: 2px solid rgba(224, 213, 181, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #e0d5b5;
+            backdrop-filter: blur(5px);
+            transition: all 0.2s ease;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+            background: rgba(224, 213, 181, 0.2);
+            box-shadow: 0 0 30px rgba(224, 213, 181, 0.5);
+        }
+
+        .action-btn.attack {
+            background: rgba(139, 0, 0, 0.4);
+            border-color: rgba(255, 68, 68, 0.6);
+        }
+
+        .dialogue-box {
+            position: absolute;
+            bottom: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid rgba(224, 213, 181, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            color: #e0d5b5;
+            font-size: 1rem;
+            line-height: 1.6;
+            display: none;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 40px rgba(224, 213, 181, 0.1);
+        }
+
+        .dialogue-speaker {
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 1s ease;
+        }
+
+        .loading-text {
+            color: #e0d5b5;
+            font-size: 1.5rem;
+            margin-top: 20px;
+            letter-spacing: 0.3em;
+        }
+
+        .rune-loader {
+            width: 80px;
+            height: 80px;
+            border: 3px solid transparent;
+            border-top-color: #e0d5b5;
+            border-radius: 50%;
+            animation: spin 2s linear infinite;
+            box-shadow: 0 0 20px rgba(224, 213, 181, 0.5);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .region-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            color: rgba(224, 213, 181, 0.9);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 2s ease;
+            text-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+        }
+
+        .crystal-count {
+            position: absolute;
+            top: 20px;
+            right: 150px;
+            color: #ffd700;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Efeito de dano */
+        .damage-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 50%, rgba(139, 0, 0, 0.3) 100%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 50;
+        }
+
+        .damage-overlay.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Tela de Carregamento -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="rune-loader"></div>
+        <div class="loading-text">CARREGANDO AETHERION...</div>
+    </div>
+
+    <!-- Menu Principal -->
+    <div id="mainMenu" class="interactive">
+        <div class="title-container">
+            <h1 class="game-title">ECOS DE AETHERION</h1>
+            <div class="subtitle">O Despertar do Eco</div>
+        </div>
+        <div class="menu-options">
+            <button class="menu-btn" onclick="startGame()">Nova Jornada</button>
+            <button class="menu-btn" onclick="continueGame()">Continuar</button>
+            <button class="menu-btn" onclick="showSettings()">Configurações</button>
+        </div>
+    </div>
+
+    <!-- Canvas do Jogo -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- HUD -->
+    <div id="gameHUD" class="ui-layer">
+        <div class="hud-top">
+            <div>
+                <div class="health-bar">
+                    <div class="health-fill" id="healthFill"></div>
+                </div>
+                <div class="mana-bar">
+                    <div class="mana-fill" id="manaFill"></div>
+                </div>
+            </div>
+            <div class="crystal-count" id="crystalCount">💎 0/4</div>
+            <div class="minimap" id="minimap"></div>
+        </div>
+
+        <div class="region-indicator" id="regionIndicator">Valedorn</div>
+
+        <div class="dialogue-box" id="dialogueBox">
+            <div class="dialogue-speaker" id="speakerName">Nome</div>
+            <div id="dialogueText">Texto do diálogo...</div>
+        </div>
+
+        <div class="controls-mobile interactive">
+            <div class="joystick" id="joystick">
+                <div class="joystick-knob" id="joystickKnob"></div>
+            </div>
+        </div>
+
+        <div class="action-buttons interactive">
+            <div class="action-btn" id="btnEcho" onclick="useEcho()">🔮</div>
+            <div class="action-btn attack" id="btnAttack" onclick="attack()">⚔️</div>
+        </div>
+    </div>
+
+    <div class="damage-overlay" id="damageOverlay"></div>
+
+    <script>
+        // Configurações e Estado do Jogo
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameState = {
+            currentRegion: 'valedorn',
+            health: 100,
+            maxHealth: 100,
+            mana: 100,
+            maxMana: 100,
+            crystals: 0,
+            position: { x: 0, y: 0 },
+            isPlaying: false,
+            time: 0,
+            echoes: [],
+            particles: [],
+            lights: [],
+            enemies: [],
+            npcs: [],
+            camera: { x: 0, y: 0 }
+        };
+
+        // Regiões do mundo
+        const regions = {
+            valedorn: {
+                name: 'Valedorn',
+                groundColor: '#2d4a3e',
+                groundColor2: '#1e3329',
+                skyColor: '#87ceeb',
+                fogColor: 'rgba(135, 206, 235, 0.3)',
+                treeColor: '#0f291e',
+                lightColor: 'rgba(255, 220, 150, 0.3)'
+            },
+            nythera: {
+                name: 'Floresta de Nythera',
+                groundColor: '#1a2f1a',
+                groundColor2: '#0f1f0f',
+                skyColor: '#2d4a3e',
+                fogColor: 'rgba(45, 74, 62, 0.5)',
+                treeColor: '#051405',
+                lightColor: 'rgba(100, 255, 100, 0.2)'
+            },
+            kharzul: {
+                name: 'Deserto de Khar\'Zul',
+                groundColor: '#c2b280',
+                groundColor2: '#a09060',
+                skyColor: '#ffcc80',
+                fogColor: 'rgba(255, 200, 150, 0.4)',
+                treeColor: '#8b7355',
+                lightColor: 'rgba(255, 200, 100, 0.4)'
+            },
+            lumen: {
+                name: 'Ilhas Suspensas de Lúmen',
+                groundColor: '#4a5568',
+                groundColor2: '#2d3748',
+                skyColor: '#1a202c',
+                fogColor: 'rgba(100, 150, 255, 0.3)',
+                treeColor: '#2d3748',
+                lightColor: 'rgba(100, 200, 255, 0.5)'
+            }
+        };
+
+        // Sistema de Luz Avançado
+        class LightSource {
+            constructor(x, y, radius, color, intensity = 1, flicker = false) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.color = color;
+                this.intensity = intensity;
+                this.flicker = flicker;
+                this.baseRadius = radius;
+                this.time = Math.random() * 1000;
+            }
+
+            update(dt) {
+                this.time += dt;
+                if (this.flicker) {
+                    this.radius = this.baseRadius + Math.sin(this.time * 0.01) * 10 + Math.random() * 5;
+                    this.intensity = 0.8 + Math.sin(this.time * 0.02) * 0.2;
+                }
+            }
+
+            draw(ctx) {
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                const alpha = this.intensity * 0.3;
+                gradient.addColorStop(0, this.color.replace(')', `, ${alpha})`).replace('rgb', 'rgba'));
+                gradient.addColorStop(0.5, this.color.replace(')', `, ${alpha * 0.5})`).replace('rgb', 'rgba'));
+                gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                
+                ctx.globalCompositeOperation = 'screen';
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalCompositeOperation = 'source-over';
+            }
+        }
+
+        // Sistema de Partículas
+        class Particle {
+            constructor(x, y, type, color) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.color = color;
+                this.life = 1;
+                this.decay = 0.01 + Math.random() * 0.02;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.size = Math.random() * 3 + 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= this.decay;
+                this.vy += 0.05; // gravidade
+                
+                if (this.type === 'crystal') {
+                    this.vy -= 0.1; // flutuação
+                    this.vx += Math.sin(Date.now() * 0.001) * 0.1;
+                }
+            }
+
+            draw(ctx) {
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // Jogador
+        const player = {
+            x: 0,
+            y: 0,
+            width: 30,
+            height: 40,
+            vx: 0,
+            vy: 0,
+            speed: 3,
+            direction: 1,
+            isMoving: false,
+            frame: 0,
+            attacking: false,
+            attackFrame: 0
+        };
+
+        // Input/Touch
+        const input = {
+            x: 0,
+            y: 0,
+            active: false
+        };
+
+        // Resize
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Setup Joystick
+        const joystick = document.getElementById('joystick');
+        const joystickKnob = document.getElementById('joystickKnob');
+        let joystickActive = false;
+        let joystickCenter = { x: 0, y: 0 };
+
+        joystick.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = joystick.getBoundingClientRect();
+            joystickCenter = {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+            joystickActive = true;
+            updateJoystick(touch.clientX, touch.clientY);
+        });
+
+        joystick.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (joystickActive) {
+                updateJoystick(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        });
+
+        joystick.addEventListener('touchend', () => {
+            joystickActive = false;
+            input.x = 0;
+            input.y = 0;
+            joystickKnob.style.transform = `translate(-50%, -50%)`;
+        });
+
+        function updateJoystick(clientX, clientY) {
+            const maxDist = 40;
+            let dx = clientX - joystickCenter.x;
+            let dy = clientY - joystickCenter.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist > maxDist) {
+                dx = (dx / dist) * maxDist;
+                dy = (dy / dist) * maxDist;
+            }
+            
+            joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            
+            input.x = dx / maxDist;
+            input.y = dy / maxDist;
+            input.active = true;
+        }
+
+        // Funções do Jogo
+        function startGame() {
+            document.getElementById('loadingScreen').style.opacity = '1';
+            document.getElementById('loadingScreen').style.display = 'flex';
+            
+            setTimeout(() => {
+                document.getElementById('mainMenu').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('mainMenu').style.display = 'none';
+                    document.getElementById('gameHUD').style.display = 'block';
+                    document.getElementById('loadingScreen').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('loadingScreen').style.display = 'none';
+                        gameState.isPlaying = true;
+                        initWorld();
+                        gameLoop();
+                    }, 1000);
+                }, 1000);
+            }, 2000);
+        }
+
+        function initWorld() {
+            // Criar luzes iniciais
+            gameState.lights = [
+                new LightSource(canvas.width/2, canvas.height/2, 200, 'rgb(255, 220, 150)', 1, true),
+                new LightSource(canvas.width/2 - 200, canvas.height/2 - 150, 150, 'rgb(100, 150, 255)', 0.8, true),
+                new LightSource(canvas.width/2 + 250, canvas.height/2 + 100, 180, 'rgb(255, 150, 100)', 0.9, true)
+            ];
+
+            // Criar alguns inimigos de teste
+            for (let i = 0; i < 3; i++) {
+                gameState.enemies.push({
+                    x: Math.random() * 800 - 400,
+                    y: Math.random() * 600 - 300,
+                    hp: 100,
+                    maxHp: 100,
+                    type: 'shadow'
+                });
+            }
+        }
+
+        function updatePlayer() {
+            if (input.active) {
+                player.vx = input.x * player.speed;
+                player.vy = input.y * player.speed;
+                player.isMoving = true;
+                player.direction = input.x > 0 ? 1 : -1;
+            } else {
+                player.vx *= 0.8;
+                player.vy *= 0.8;
+                player.isMoving = Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1;
+            }
+
+            player.x += player.vx;
+            player.y += player.vy;
+            player.frame += 0.2;
+
+            // Atualizar câmera
+            gameState.camera.x += (player.x - gameState.camera.x) * 0.1;
+            gameState.camera.y += (player.y - gameState.camera.y) * 0.1;
+
+            // Regeneração de mana
+            if (gameState.mana < gameState.maxMana) {
+                gameState.mana += 0.1;
+                document.getElementById('manaFill').style.width = (gameState.mana / gameState.maxMana * 100) + '%';
+            }
+        }
+
+        function drawTerrain() {
+            const region = regions[gameState.currentRegion];
+            const offsetX = -gameState.camera.x + canvas.width / 2;
+            const offsetY = -gameState.camera.y + canvas.height / 2;
+
+            // Céu com gradiente
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, region.skyColor);
+            skyGradient.addColorStop(1, region.groundColor);
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid do chão com perspectiva
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
+
+            // Desenhar chão texturizado
+            const tileSize = 100;
+            const startX = Math.floor((gameState.camera.x - canvas.width) / tileSize) * tileSize;
+            const startY = Math.floor((gameState.camera.y - canvas.height) / tileSize) * tileSize;
+            const endX = startX + canvas.width * 2;
+            const endY = startY + canvas.height * 2;
+
+            for (let x = startX; x < endX; x += tileSize) {
+                for (let y = startY; y < endY; y += tileSize) {
+                    const noise = Math.sin(x * 0.01) * Math.cos(y * 0.01);
+                    const color = noise > 0 ? region.groundColor : region.groundColor2;
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y, tileSize, tileSize);
+                    
+                    // Adicionar textura/detale
+                    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                    ctx.fillRect(x + 5, y + 5, tileSize - 10, tileSize - 10);
+                }
+            }
+
+            // Desenhar árvores/elementos do cenário
+            drawScenery(region);
+
+            ctx.restore();
+        }
+
+        function drawScenery(region) {
+            // Árvores estilizadas
+            for (let i = 0; i < 20; i++) {
+                const x = (i * 137) % 2000 - 1000;
+                const y = (i * 293) % 1500 - 750;
+                
+                if (Math.abs(x - player.x) < canvas.width && Math.abs(y - player.y) < canvas.height) {
+                    // Sombra
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    ctx.beginPath();
+                    ctx.ellipse(x, y + 40, 30, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Tronco
+                    ctx.fillStyle = '#3d2817';
+                    ctx.fillRect(x - 10, y - 20, 20, 60);
+
+                    // Copa
+                    ctx.fillStyle = region.treeColor;
+                    ctx.beginPath();
+                    ctx.moveTo(x - 40, y - 10);
+                    ctx.lineTo(x, y - 80);
+                    ctx.lineTo(x + 40, y - 10);
+                    ctx.fill();
+
+                    // Brilho nas folhas
+                    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                    ctx.beginPath();
+                    ctx.moveTo(x - 20, y - 20);
+                    ctx.lineTo(x, y - 60);
+                    ctx.lineTo(x + 10, y - 25);
+                    ctx.fill();
+                }
+            }
+
+            // Cristais espalhados
+            for (let i = 0; i < 5; i++) {
+                const x = (i * 431) % 1500 - 750;
+                const y = (i * 347) % 1000 - 500;
+                
+                if (Math.abs(x - player.x) < canvas.width && Math.abs(y - player.y) < canvas.height) {
+                    drawCrystal(x, y, Date.now() * 0.001 + i);
+                }
+            }
+        }
+
+        function drawCrystal(x, y, time) {
+            const glow = Math.sin(time * 2) * 0.3 + 0.7;
+            
+            // Aura de luz
+            const gradient = ctx.createRadialGradient(x, y - 20, 0, x, y - 20, 60);
+            gradient.addColorStop(0, `rgba(100, 200, 255, ${0.5 * glow})`);
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x, y - 20, 60, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cristal
+            ctx.fillStyle = `rgba(150, 220, 255, ${0.8 * glow})`;
+            ctx.beginPath();
+            ctx.moveTo(x, y - 50);
+            ctx.lineTo(x - 15, y - 10);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + 15, y - 10);
+            ctx.closePath();
+            ctx.fill();
+
+            // Brilho interno
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.9 * glow})`;
+            ctx.beginPath();
+            ctx.moveTo(x, y - 40);
+            ctx.lineTo(x - 5, y - 20);
+            ctx.lineTo(x, y - 15);
+            ctx.lineTo(x + 5, y - 20);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawPlayer() {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+
+            // Sombra
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(0, 35, 20, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Animação de caminhada
+            const bob = player.isMoving ? Math.sin(player.frame) * 3 : 0;
+            const legOffset = player.isMoving ? Math.sin(player.frame * 2) * 5 : 0;
+
+            // Pernas
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(-8, 10 + bob, 6, 20 + legOffset);
+            ctx.fillRect(2, 10 + bob, 6, 20 - legOffset);
+
+            // Corpo
+            ctx.fillStyle = '#34495e';
+            ctx.fillRect(-12, -20 + bob, 24, 35);
+
+            // Capa
+            ctx.fillStyle = '#8b4513';
+            ctx.beginPath();
+            ctx.moveTo(-12, -15 + bob);
+            ctx.lineTo(-20, 30 + bob);
+            ctx.lineTo(-5, 25 + bob);
+            ctx.lineTo(-12, -15 + bob);
+            ctx.fill();
+
+            // Cabeça
+            ctx.fillStyle = '#d4a574';
+            ctx.beginPath();
+            ctx.arc(0, -30 + bob, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Olhos (brilho do Eco)
+            const eyeGlow = Math.sin(Date.now() * 0.003) * 0.3 + 0.7;
+            ctx.fillStyle = `rgba(100, 200, 255, ${eyeGlow})`;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(100, 200, 255, 0.8)';
+            ctx.beginPath();
+            ctx.arc(-4, -32 + bob, 3, 0, Math.PI * 2);
+            ctx.arc(4, -32 + bob, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Arma
+            if (player.attacking) {
+                ctx.save();
+                ctx.rotate(player.attackFrame * 0.5);
+                ctx.fillStyle = '#silver';
+                ctx.fillRect(15, -10 + bob, 30, 6);
+                ctx.fillStyle = '#8b0000';
+                ctx.beginPath();
+                ctx.moveTo(45, -10 + bob);
+                ctx.lineTo(55, -7 + bob);
+                ctx.lineTo(45, -4 + bob);
+                ctx.fill();
+                ctx.restore();
+                player.attackFrame += 0.5;
+                if (player.attackFrame > Math.PI * 2) {
+                    player.attacking = false;
+                    player.attackFrame = 0;
+                }
+            } else {
+                ctx.fillStyle = '#silver';
+                ctx.fillRect(15, 5 + bob, 25, 5);
+            }
+
+            ctx.restore();
+        }
+
+        function drawEnemies() {
+            gameState.enemies.forEach(enemy => {
+                if (enemy.hp <= 0) return;
+                
+                ctx.save();
+                ctx.translate(enemy.x, enemy.y);
+
+                // Sombra distorcida
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.beginPath();
+                ctx.ellipse(0, 30, 25, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Corpo sombrio
+                ctx.fillStyle = '#1a1a2e';
+                ctx.beginPath();
+                ctx.moveTo(0, -40);
+                ctx.lineTo(-20, 30);
+                ctx.lineTo(0, 20);
+                ctx.lineTo(20, 30);
+                ctx.closePath();
+                ctx.fill();
+
+                // Olhos vermelhos brilhantes
+                const pulse = Math.sin(Date.now() * 0.005) * 0.3 + 0.7;
+                ctx.fillStyle = `rgba(255, 0, 0, ${pulse})`;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = 'red';
+                ctx.beginPath();
+                ctx.arc(-8, -20, 5, 0, Math.PI * 2);
+                ctx.arc(8, -20, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Barra de vida
+                const hpPercent = enemy.hp / enemy.maxHp;
+                ctx.fillStyle = 'red';
+                ctx.fillRect(-20, -50, 40 * hpPercent, 4);
+                ctx.strokeStyle = 'black';
+                ctx.strokeRect(-20, -50, 40, 4);
+
+                ctx.restore();
+            });
+        }
+
+        function drawLighting() {
+            // Camada de escuridão para efeito de iluminação dinâmica
+            ctx.save();
+            
+            // Criar overlay escuro
+            const darkness = ctx.createRadialGradient(
+                canvas.width/2, canvas.height/2, 100,
+                canvas.width/2, canvas.height/2, 800
+            );
+            darkness.addColorStop(0, 'rgba(0,0,0,0)');
+            darkness.addColorStop(0.5, 'rgba(0,0,0,0.3)');
+            darkness.addColorStop(1, 'rgba(0,0,0,0.7)');
+            
+            ctx.fillStyle = darkness;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Aplicar luzes
+            gameState.lights.forEach(light => {
+                light.x = canvas.width/2 + (light.x - gameState.camera.x) * 0.1;
+                light.y = canvas.height/2 + (light.y - gameState.camera.y) * 0.1;
+                light.update(16);
+                light.draw(ctx);
+            });
+
+            // Luz do jogador
+            const playerLight = new LightSource(
+                canvas.width/2, 
+                canvas.height/2, 
+                150, 
+                'rgb(255, 220, 180)', 
+                1, 
+                true
+            );
+            playerLight.draw(ctx);
+
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            gameState.particles = gameState.particles.filter(p => {
+                p.update();
+                p.draw(ctx);
+                return p.life > 0;
+            });
+        }
+
+        function updateGame() {
+            updatePlayer();
+            gameState.time += 0.016;
+
+            // Atualizar inimigos (IA simples)
+            gameState.enemies.forEach(enemy => {
+                if (enemy.hp > 0) {
+                    const dx = player.x - enemy.x;
+                    const dy = player.y - enemy.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < 300 && dist > 50) {
+                        enemy.x += (dx / dist) * 1;
+                        enemy.y += (dy / dist) * 1;
+                    }
+                }
+            });
+        }
+
+        function render() {
+            // Limpar canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Desenhar mundo
+            drawTerrain();
+            
+            // Ordenar por profundidade (Y)
+            const renderList = [
+                { type: 'player', y: player.y, obj: player },
+                ...gameState.enemies.map(e => ({ type: 'enemy', y: e.y, obj: e }))
+            ].sort((a, b) => a.y - b.y);
+
+            renderList.forEach(item => {
+                if (item.type === 'player') drawPlayer();
+                else if (item.type === 'enemy') {
+                    ctx.save();
+                    ctx.translate(item.obj.x - gameState.camera.x + canvas.width/2, 
+                                 item.obj.y - gameState.camera.y + canvas.height/2);
+                    
+                    // Redesenhar inimigo relativo à câmera
+                    ctx.fillStyle = '#1a1a2e';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -40);
+                    ctx.lineTo(-20, 30);
+                    ctx.lineTo(0, 20);
+                    ctx.lineTo(20, 30);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    const pulse = Math.sin(Date.now() * 0.005) * 0.3 + 0.7;
+                    ctx.fillStyle = `rgba(255, 0, 0, ${pulse})`;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = 'red';
+                    ctx.beginPath();
+                    ctx.arc(-8, -20, 5, 0, Math.PI * 2);
+                    ctx.arc(8, -20, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    
+                    ctx.restore();
+                }
+            });
+
+            drawParticles();
+            drawLighting();
+        }
+
+        function gameLoop() {
+            if (!gameState.isPlaying) return;
+            
+            updateGame();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Ações do Jogador
+        function attack() {
+            if (!player.attacking) {
+                player.attacking = true;
+                player.attackFrame = 0;
+                
+                // Criar partículas de ataque
+                for (let i = 0; i < 10; i++) {
+                    gameState.particles.push(new Particle(
+                        player.x + player.direction * 30,
+                        player.y,
+                        'spark',
+                        '#ffd700'
+                    ));
+                }
+
+                // Verificar acerto em inimigos
+                gameState.enemies.forEach(enemy => {
+                    const dx = enemy.x - player.x;
+                    const dy = enemy.y - player.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < 80 && Math.sign(dx) === player.direction) {
+                        enemy.hp -= 25;
+                        // Partículas de sangue/dano
+                        for (let i = 0; i < 5; i++) {
+                            gameState.particles.push(new Particle(
+                                enemy.x, enemy.y, 'blood', '#8b0000'
+                            ));
+                        }
+                    }
+                });
+            }
+        }
+
+        function useEcho() {
+            if (gameState.mana >= 20) {
+                gameState.mana -= 20;
+                document.getElementById('manaFill').style.width = (gameState.mana / gameState.maxMana * 100) + '%';
+                
+                // Efeito visual de Eco
+                const echoLight = new LightSource(
+                    canvas.width/2, 
+                    canvas.height/2, 
+                    400, 
+                    'rgb(100, 200, 255)', 
+                    2, 
+                    false
+                );
+                gameState.lights.push(echoLight);
+                
+                // Revelar inimigos próximos
+                setTimeout(() => {
+                    gameState.lights = gameState.lights.filter(l => l !== echoLight);
+                }, 2000);
+
+                // Partículas de eco
+                for (let i = 0; i < 20; i++) {
+                    const angle = (Math.PI * 2 / 20) * i;
+                    gameState.particles.push(new Particle(
+                        player.x + Math.cos(angle) * 50,
+                        player.y + Math.sin(angle) * 50,
+                        'crystal',
+                        '#87ceeb'
+                    ));
+                }
+            }
+        }
+
+        function showSettings() {
+            alert('Configurações:\n- Som: Ligado\n- Gráficos: Alto\n- Controles: Touch');
+        }
+
+        function continueGame() {
+            alert('Nenhum save encontrado. Iniciando nova jornada...');
+            startGame();
+        }
+
+        // Prevenir scroll em mobile
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.closest('.interactive')) return;
+            e.preventDefault();
+        }, { passive: false });
+
+        // Iniciar loop de renderização do menu
+        function menuBackground() {
+            if (gameState.isPlaying) return;
+            
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Partículas de fundo do menu
+            for (let i = 0; i < 50; i++) {
+                const x = (Date.now() * 0.02 + i * 100) % canvas.width;
+                const y = (i * 50) % canvas.height;
+                const size = Math.sin(Date.now() * 0.001 + i) * 2 + 3;
+                
+                ctx.fillStyle = `rgba(224, 213, 181, ${0.3 + Math.sin(Date.now() * 0.002 + i) * 0.2})`;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            requestAnimationFrame(menuBackground);
+        }
+        menuBackground();
+
+    </script>
+</body>
+</html>
