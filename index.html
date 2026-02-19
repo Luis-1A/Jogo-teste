@@ -2,1192 +2,1801 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ecos de Aetherion - Mundo de Luis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Ecos de Aetherion - Realista</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <!-- Post Processing -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/GammaCorrectionShader.js"></script>
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+        body { 
+            margin: 0; overflow: hidden; background: #000; 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            touch-action: none; user-select: none; -webkit-user-select: none;
         }
         
-        body {
-            overflow: hidden;
-            background: #000;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        #gameCanvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-        }
-        
-        #ui {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 100;
-        }
-        
-        #crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: all 0.2s;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-            z-index: 101;
-        }
-        
-        #crosshair.interacting {
-            border-color: #00ff88;
-            transform: translate(-50%, -50%) scale(1.5);
-            box-shadow: 0 0 20px #00ff88;
-        }
-        
-        #interactionPrompt {
-            position: absolute;
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85);
-            color: white;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 18px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            border: 2px solid #00ff88;
-            text-align: center;
-            backdrop-filter: blur(10px);
-        }
-        
-        #interactionPrompt.visible {
-            opacity: 1;
-        }
-        
-        #dialogueBox {
-            position: absolute;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            max-width: 800px;
-            background: rgba(10, 15, 30, 0.95);
-            border: 3px solid #4a90e2;
-            border-radius: 20px;
-            padding: 30px;
-            color: white;
-            display: none;
-            pointer-events: auto;
-            backdrop-filter: blur(20px);
-            z-index: 200;
-        }
-        
-        #dialogueBox.active {
-            display: block;
-        }
-        
-        .speaker-name {
-            color: #4a90e2;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        .dialogue-text {
-            font-size: 20px;
-            line-height: 1.6;
-            margin-bottom: 20px;
-            font-style: italic;
-        }
-        
-        .dialogue-options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .dialogue-option {
-            background: rgba(74, 144, 226, 0.2);
-            border: 2px solid #4a90e2;
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: left;
-            font-size: 16px;
-            pointer-events: auto;
-        }
-        
-        .dialogue-option:hover {
-            background: rgba(74, 144, 226, 0.5);
-            transform: translateX(10px);
-        }
-        
-        #stats {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(10, 15, 30, 0.9);
-            padding: 20px;
-            border-radius: 15px;
-            border: 2px solid #00ff88;
-            color: white;
-            backdrop-filter: blur(10px);
-            min-width: 200px;
-        }
-        
-        .stat-bar {
-            margin: 10px 0;
-        }
-        
-        .stat-label {
-            display: inline-block;
-            width: 80px;
-            font-size: 14px;
-        }
-        
-        .stat-value {
-            display: inline-block;
-            width: 120px;
-            height: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            overflow: hidden;
-            vertical-align: middle;
-        }
-        
-        .stat-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #00ff88, #00cc66);
-            transition: width 0.3s;
-        }
-        
-        #inventory {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(10, 15, 30, 0.9);
-            padding: 20px;
-            border-radius: 15px;
-            border: 2px solid #4a90e2;
-            color: white;
-            min-width: 200px;
-            backdrop-filter: blur(10px);
-        }
-        
+        /* Loading Screen */
         #loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            color: white;
-            transition: opacity 0.5s;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999; transition: opacity 0.5s;
+        }
+        .loader {
+            width: 80px; height: 80px; border: 4px solid rgba(212, 175, 55, 0.3);
+            border-top: 4px solid #D4AF37; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #loading p { color: #D4AF37; margin-top: 20px; font-size: 1.2em; letter-spacing: 2px; }
+        
+        /* Game Canvas */
+        #gameCanvas { display: block; width: 100%; height: 100%; }
+        
+        /* UI Layer */
+        #ui { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            pointer-events: none; z-index: 10;
         }
         
-        #loading h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-            text-shadow: 0 0 30px rgba(74, 144, 226, 0.8);
+        /* Crosshair - Desktop Only */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; 
+            width: 24px; height: 24px; 
+            border: 2px solid rgba(255, 255, 255, 0.9); 
+            border-radius: 50%; 
+            transform: translate(-50%, -50%);
+            pointer-events: none; display: none;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        #crosshair::before, #crosshair::after {
+            content: ''; position: absolute; background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        #crosshair::before { top: 50%; left: 20%; width: 60%; height: 2px; transform: translateY(-50%); }
+        #crosshair::after { left: 50%; top: 20%; height: 60%; width: 2px; transform: translateX(-50%); }
+        
+        /* Dialogue Box */
+        #dialogueBox {
+            position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 40, 0.95));
+            border: 2px solid #D4AF37; border-radius: 15px;
+            padding: 25px; max-width: 700px; width: 90%;
+            color: white; display: none; pointer-events: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(212, 175, 55, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        #dialogueName { 
+            color: #D4AF37; font-weight: bold; font-size: 1.3em; 
+            margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        #dialogueText { 
+            font-size: 1.15em; line-height: 1.6; 
+            color: #f0f0f0; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
         
-        #loading p {
-            font-size: 20px;
-            opacity: 0.8;
-            margin: 10px 0;
+        /* Interaction Prompt */
+        #interactionPrompt {
+            position: absolute; bottom: 180px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8); color: white; 
+            padding: 12px 28px; border-radius: 25px; 
+            font-size: 1em; display: none; pointer-events: none;
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
         }
+        #interactionPrompt b { color: #D4AF37; font-size: 1.2em; }
         
-        #loadingBar {
-            width: 400px;
-            height: 30px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
-            margin-top: 30px;
-            overflow: hidden;
-            border: 2px solid rgba(255,255,255,0.3);
+        /* Menu */
+        #menu {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(10, 10, 30, 0.98), rgba(20, 20, 50, 0.98));
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            pointer-events: auto; z-index: 1000; overflow-y: auto;
+            backdrop-filter: blur(20px);
         }
-        
-        #loadingProgress {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, #00ff88, #4a90e2);
-            transition: width 0.3s;
-        }
-        
-        #startButton {
-            margin-top: 30px;
-            padding: 15px 40px;
-            font-size: 24px;
-            background: linear-gradient(90deg, #00ff88, #4a90e2);
-            border: none;
-            border-radius: 30px;
-            color: white;
-            cursor: pointer;
-            display: none;
-            transition: transform 0.3s;
-        }
-        
-        #startButton:hover {
-            transform: scale(1.1);
-        }
-        
-        .hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        
-        #controls {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 14px;
-            line-height: 1.8;
-        }
-        
-        kbd {
-            background: rgba(255,255,255,0.2);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-family: monospace;
-        }
-        
-        #error {
-            color: #ff6b6b;
-            display: none;
+        #menu h1 {
+            font-size: 3.5em; color: #D4AF37; 
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.8), 0 4px 10px rgba(0,0,0,0.5);
+            margin-bottom: 15px; font-weight: 300; letter-spacing: 8px;
             text-align: center;
-            padding: 20px;
+        }
+        #menu .subtitle {
+            color: #888; font-size: 1.1em; margin-bottom: 40px;
+            text-align: center; max-width: 600px; line-height: 1.6;
+        }
+        .btn {
+            background: linear-gradient(135deg, transparent, rgba(212, 175, 55, 0.1));
+            border: 2px solid #D4AF37; color: #D4AF37;
+            padding: 18px 50px; font-size: 1.2em; cursor: pointer;
+            transition: all 0.3s; text-transform: uppercase; letter-spacing: 3px;
+            margin: 10px; border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .btn:hover { 
+            background: #D4AF37; color: #0a0a1a; 
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.6);
+            transform: translateY(-2px);
+        }
+        .btn:active { transform: translateY(0); }
+        
+        /* HUD */
+        #hud {
+            position: absolute; top: 20px; left: 20px; 
+            background: rgba(0, 0, 0, 0.6); 
+            padding: 20px; border-radius: 15px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        #hud h3 { 
+            color: #D4AF37; margin: 0 0 15px 0; 
+            font-size: 1.2em; text-transform: uppercase; letter-spacing: 2px;
+        }
+        #hud p { 
+            margin: 8px 0; color: #ccc; font-size: 0.95em;
+            display: flex; align-items: center; gap: 8px;
+        }
+        #hud span { color: #fff; font-weight: 600; }
+        
+        /* Luis Status */
+        #luisStatus {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0, 0, 0, 0.6); 
+            border: 1px solid #4A90E2; border-radius: 15px;
+            padding: 20px; color: white; display: none;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        #luisStatus h3 { 
+            color: #4A90E2; margin: 0 0 12px 0; 
+            font-size: 1.1em; text-transform: uppercase; letter-spacing: 1px;
+        }
+        #luisStatus p { margin: 6px 0; font-size: 0.9em; color: #ccc; }
+        #luisStatus span { color: #fff; font-weight: 600; }
+        
+        /* Device Info */
+        #deviceInfo {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(212, 175, 55, 0.15); 
+            color: #D4AF37; padding: 10px 25px;
+            border-radius: 20px; font-size: 0.9em; 
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            backdrop-filter: blur(5px);
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+        
+        /* MOBILE CONTROLS - REDESIGNED */
+        #mobileControls {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+            display: none; pointer-events: none; z-index: 50;
+        }
+        
+        /* Joystick Zone - Bottom Left */
+        #joystickZone {
+            position: absolute; bottom: 40px; left: 40px;
+            width: 140px; height: 140px; pointer-events: auto;
+        }
+        #joystickBase {
+            position: absolute; width: 120px; height: 120px;
+            background: rgba(255, 255, 255, 0.1); 
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%; top: 10px; left: 10px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        #joystickStick {
+            position: absolute; width: 50px; height: 50px;
+            background: linear-gradient(135deg, #D4AF37, #B8941F);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%; top: 45px; left: 45px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            transition: transform 0.05s;
+        }
+        #joystickStick::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 20px; height: 20px; background: rgba(255,255,255,0.3);
+            border-radius: 50%; transform: translate(-50%, -50%);
+        }
+        
+        /* Look Zone - Right Side (invisible but functional) */
+        #lookZone {
+            position: absolute; top: 0; right: 0; 
+            width: 60%; height: 100%;
+            pointer-events: auto; z-index: 40;
+        }
+        
+        /* Action Buttons - Bottom Right Corner, properly spaced */
+        #actionButtons {
+            position: absolute; bottom: 40px; right: 40px;
+            display: flex; flex-direction: column; 
+            align-items: flex-end; gap: 20px;
+            pointer-events: auto; z-index: 60;
+        }
+        
+        /* Main Action Button (Interact) - Large and prominent */
+        #interactBtn {
+            width: 80px; height: 80px; 
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(65, 105, 225, 0.9), rgba(40, 80, 200, 0.9));
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            color: white; font-size: 1.1em; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; user-select: none; 
+            backdrop-filter: blur(10px);
+            box-shadow: 0 6px 25px rgba(65, 105, 225, 0.5);
+            transition: all 0.1s; text-transform: uppercase;
+        }
+        #interactBtn:active { 
+            transform: scale(0.92); 
+            box-shadow: 0 3px 15px rgba(65, 105, 225, 0.4);
+        }
+        #interactBtn::before {
+            content: 'E'; font-size: 1.4em; font-weight: 800;
+        }
+        
+        /* Secondary Buttons Row */
+        #secondaryButtons {
+            display: flex; gap: 15px;
+        }
+        
+        .secondaryBtn {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white; font-size: 0.9em;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; user-select: none;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.1s;
+        }
+        .secondaryBtn:active { transform: scale(0.92); }
+        
+        /* Jump Button */
+        #jumpBtn::before { content: '↟'; font-size: 1.3em; }
+        
+        /* Crouch Button */
+        #crouchBtn::before { content: '↧'; font-size: 1.3em; }
+        
+        /* Menu Button - Top Right on Mobile */
+        #mobileMenuBtn {
+            position: absolute; top: 80px; right: 20px;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(212, 175, 55, 0.5);
+            color: #D4AF37; font-size: 1.2em;
+            display: none; align-items: center; justify-content: center;
+            cursor: pointer; pointer-events: auto;
+            backdrop-filter: blur(10px);
+            z-index: 70;
+        }
+        #mobileMenuBtn::before { content: '☰'; }
+        
+        /* Look Indicator */
+        #lookIndicator {
+            position: absolute; top: 30%; right: 40px;
+            width: 50px; height: 50px; 
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%; display: none; pointer-events: none;
+            background: rgba(255,255,255,0.05);
+        }
+        #lookIndicator::before {
+            content: '👁'; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); font-size: 20px; opacity: 0.4;
+        }
+        
+        /* Typing effect */
+        .typing::after {
+            content: '|'; animation: blink 1s infinite; color: #D4AF37;
+        }
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            #menu h1 { font-size: 2.2em; letter-spacing: 4px; }
+            #dialogueBox { bottom: 200px; max-width: 95%; padding: 20px; }
+            #hud { font-size: 0.85em; padding: 15px; top: 80px; left: 10px; }
+            #luisStatus { top: 80px; right: 10px; font-size: 0.85em; padding: 15px; }
+            #joystickZone { bottom: 30px; left: 30px; }
+            #actionButtons { bottom: 30px; right: 30px; }
+            #interactBtn { width: 70px; height: 70px; }
+            .secondaryBtn { width: 50px; height: 50px; }
+        }
+        
+        /* Vignette Effect */
+        #vignette {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5;
+            background: radial-gradient(circle, transparent 60%, rgba(0,0,0,0.4) 100%);
         }
     </style>
 </head>
 <body>
-    <div id="loading">
-        <h1>🌲 Ecos de Aetherion</h1>
-        <p id="loadingText">Inicializando mundo...</p>
-        <div id="loadingBar">
-            <div id="loadingProgress"></div>
-        </div>
-        <button id="startButton" onclick="startGame()">🎮 ENTRAR NO MUNDO</button>
-        <div id="error"></div>
-    </div>
 
-    <div id="ui" style="display: none;">
-        <div id="crosshair"></div>
-        <div id="interactionPrompt">Pressione <kbd>E</kbd> para interagir</div>
-        
-        <div id="dialogueBox">
-            <div class="speaker-name" id="speakerName">Luis</div>
-            <div class="dialogue-text" id="dialogueText"></div>
-            <div class="dialogue-options" id="dialogueOptions"></div>
-        </div>
-        
-        <div id="stats">
-            <h3>❤️ Status</h3>
-            <div class="stat-bar">
-                <span class="stat-label">Saúde:</span>
-                <span class="stat-value"><div class="stat-fill" id="healthBar" style="width: 100%"></div></span>
-            </div>
-            <div class="stat-bar">
-                <span class="stat-label">Energia:</span>
-                <span class="stat-value"><div class="stat-fill" id="energyBar" style="width: 100%; background: linear-gradient(90deg, #ffcc00, #ff9900)"></div></span>
-            </div>
-            <div class="stat-bar">
-                <span class="stat-label">Amizade:</span>
-                <span class="stat-value"><div class="stat-fill" id="friendshipBar" style="width: 50%; background: linear-gradient(90deg, #ff6b9d, #c44569)"></div></span>
-            </div>
-        </div>
-        
-        <div id="inventory">
-            <h3>🎒 Inventário</h3>
-            <div id="inventoryList">
-                <div style="padding: 5px;">🗡️ Espada de Madeira</div>
-                <div style="padding: 5px;">🍎 Maçã x3</div>
-            </div>
-        </div>
-        
-        <div id="controls">
-            <strong>Controles:</strong><br>
-            <kbd>WASD</kbd> Mover | <kbd>MOUSE</kbd> Olhar<br>
-            <kbd>E</kbd> Interagir | <kbd>F</kbd> Sentar<br>
-            <kbd>ESC</kbd> Menu | <kbd>SHIFT</kbd> Correr
-        </div>
-    </div>
+<!-- Loading Screen -->
+<div id="loading">
+    <div class="loader"></div>
+    <p>CARREGANDO AETHERION...</p>
+</div>
 
-    <!-- Three.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- Menu -->
+<div id="menu">
+    <div id="deviceInfo">Detectando dispositivo...</div>
+    <h1>ECOS DE AETHERION</h1>
+    <p class="subtitle">Você não é o escolhido... Você é quem escolhe ficar. 👊<br>
+    Explore Valedorn com gráficos realistas e descubra a história de Luis.</p>
     
-    <script>
-        // Sistema de Loading
-        const loadingScreen = document.getElementById('loading');
-        const loadingProgress = document.getElementById('loadingProgress');
-        const loadingText = document.getElementById('loadingText');
-        const startButton = document.getElementById('startButton');
-        const ui = document.getElementById('ui');
-        const errorDiv = document.getElementById('error');
+    <div id="desktopInstructions" style="display: none; color: #666; margin-bottom: 30px; text-align: center;">
+        <p style="margin: 5px 0;"><strong>WASD</strong> - Mover | <strong>Mouse</strong> - Olhar | <strong>E</strong> - Interagir</p>
+        <p style="margin: 5px 0;"><strong>ESC</strong> - Menu | <strong>Shift</strong> - Correr</p>
+    </div>
+    
+    <div id="mobileInstructions" style="display: none; color: #666; margin-bottom: 30px; text-align: center;">
+        <p style="margin: 5px 0;"><strong>Joystick Esquerdo</strong> - Mover</p>
+        <p style="margin: 5px 0;"><strong>Arrastar Direita</strong> - Olhar | <strong>Botão Azul</strong> - Interagir</p>
+    </div>
+    
+    <button class="btn" id="startBtn" onclick="startGame()">Iniciar Jornada</button>
+    
+    <div style="margin-top: 30px; color: #555; font-size: 0.85em; text-align: center;">
+        <p>Dispositivo: <span id="deviceType" style="color: #D4AF37;">...</span> | 
+        Gráficos: <span style="color: #4CAF50;">Ultra</span></p>
+    </div>
+</div>
+
+<!-- Game UI -->
+<div id="ui">
+    <div id="vignette"></div>
+    <div id="crosshair"></div>
+    <div id="interactionPrompt">Pressione <b>E</b> para interagir</div>
+    
+    <div id="dialogueBox">
+        <div id="dialogueName">Nome</div>
+        <div id="dialogueText" class="typing"></div>
+    </div>
+    
+    <div id="hud">
+        <h3>🌟 Valedorn</h3>
+        <p>🌳 Árvores: <span id="treeCount">0</span></p>
+        <p>🏠 Casas: <span id="houseCount">0</span></p>
+        <p>👥 Habitantes: <span id="npcCount">0</span></p>
+        <p>🐄 Animais: <span id="animalCount">0</span></p>
+    </div>
+    
+    <div id="luisStatus">
+        <h3>👤 Luis</h3>
+        <p>Estado: <span id="luisState">Seguindo</span></p>
+        <p>Vínculo: <span id="bondLevel">Amigo</span></p>
+    </div>
+    
+    <!-- Mobile Controls - Redesigned Layout -->
+    <div id="mobileControls">
+        <!-- Look Zone (invisible, covers right side) -->
+        <div id="lookZone"></div>
         
-        let scene, camera, renderer, controls;
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let velocity = new THREE.Vector3();
-        let direction = new THREE.Vector3();
-        let prevTime = performance.now();
-        let isLocked = false;
+        <!-- Look Indicator -->
+        <div id="lookIndicator"></div>
         
-        const npcs = [];
-        const animals = [];
-        const buildings = [];
-        const interactables = [];
-        let friendshipLevel = 50;
-        let canInteract = null;
+        <!-- Mobile Menu Button -->
+        <div id="mobileMenuBtn" onclick="showPauseMenu()"></div>
         
-        // Verificar se Three.js carregou
-        if (typeof THREE === 'undefined') {
-            showError('Erro ao carregar Three.js. Verifique sua conexão.');
-        } else {
-            initWorld();
+        <!-- Joystick (Bottom Left) -->
+        <div id="joystickZone">
+            <div id="joystickBase"></div>
+            <div id="joystickStick"></div>
+        </div>
+        
+        <!-- Action Buttons (Bottom Right, properly spaced) -->
+        <div id="actionButtons">
+            <!-- Secondary buttons in a row -->
+            <div id="secondaryButtons">
+                <div class="secondaryBtn" id="jumpBtn"></div>
+                <div class="secondaryBtn" id="crouchBtn"></div>
+            </div>
+            <!-- Main interact button below -->
+            <div id="interactBtn"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Device Detection
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                 (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) ||
+                 window.innerWidth < 768;
+
+// Game State
+let scene, camera, renderer, controls, composer;
+let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+let isRunning = false;
+let prevTime = performance.now();
+let velocity = new THREE.Vector3();
+let direction = new THREE.Vector3();
+let raycaster;
+let interactables = [];
+let npcs = [];
+let animals = [];
+let houses = [];
+let trees = [];
+let luis;
+let isGameActive = false;
+let currentDialogue = null;
+let typingInterval;
+let playerInHouse = false;
+
+// Mobile specific
+let joystickActive = false;
+let joystickVector = { x: 0, y: 0 };
+let touchStartPos = { x: 0, y: 0 };
+let isLooking = false;
+
+// Realistic Graphics Settings
+const GRAPHICS_QUALITY = {
+    shadows: true,
+    bloom: true,
+    antialias: true,
+    pixelRatio: Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2)
+};
+
+// Luis AI State
+let luisState = 'following';
+let luisDialogues = [
+    "Tá com medo? Normal. Mas eu tô aqui.",
+    "Escolhe o que você acredita. Eu seguro as consequências com você.",
+    "Prefiro ser o amigo certo... do que o rei errado.",
+    "Não sou o herói da profecia, mas nenhum herói vence sozinho.",
+    "Você é quem escolhe ficar. Isso faz toda a diferença.",
+    "Ei, vi uma vaca bonita lá perto da fonte. Quer ir ver?",
+    "Às vezes precisamos apenas de alguém que caminhe junto.",
+    "Lembre-se: eu não sou sombra, sou base."
+];
+
+const npcFunctions = [
+    "walking_dog", "carrying_groceries", "sweeping_porch", "watering_plants",
+    "reading_newspaper", "fixing_fence", "chatting_neighbor", "pushing_wheelbarrow",
+    "fishing", "chopping_wood", "milking_cow", "feeding_chickens", "herding_sheep",
+    "painting_fence", "playing_flute", "dancing", "stretching", "bird_watching",
+    "gardening", "hanging_laundry", "repairing_roof", "carving_wood", "knitting",
+    "tending_fire", "writing_letter", "polishing_shoes", "combing_hair", "waving",
+    "looking_at_sky", "counting_coins"
+];
+
+const npcNames = [
+    "Aldric Blackwood", "Beatrice Thornberry", "Cedric Ironheart", "Dorothy Meadowbrook",
+    "Edmund Stonegate", "Florence Whitmore", "Godric Crawford", "Hilda Holloway",
+    "Ivan Ashford", "Josephine Westbrook", "Kenneth Northwood", "Lydia Eastwick",
+    "Morton Southgate", "Nora Fairweather", "Oswald Stormborn", "Priscilla Brightblade",
+    "Quentin Darkhollow", "Rosalind Lightfoot", "Silas Strongarm", "Theodora Swiftwind",
+    "Ulric Deepwater", "Victoria Highhill", "Wilfred Longbridge", "Yvette Oldfield",
+    "Zachary Newman", "Agatha Blackwood", "Barnaby Thornberry", "Clementine Ironheart",
+    "Duncan Meadowbrook", "Eleanor Stonegate"
+];
+
+// Initialize Device Info
+document.getElementById('deviceType').textContent = isMobile ? 'Celular/Tablet' : 'Desktop/Notebook';
+document.getElementById('deviceInfo').textContent = isMobile ? '📱 Modo Touch' : '💻 Modo Teclado/Mouse';
+document.getElementById('desktopInstructions').style.display = isMobile ? 'none' : 'block';
+document.getElementById('mobileInstructions').style.display = isMobile ? 'block' : 'none';
+
+function init() {
+    // Scene setup with realistic fog
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB);
+    scene.fog = new THREE.FogExp2(0x87CEEB, 0.015);
+
+    // Camera with realistic FOV
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 300);
+    camera.position.set(0, 1.7, 5);
+
+    // High quality renderer
+    renderer = new THREE.WebGLRenderer({ 
+        antialias: GRAPHICS_QUALITY.antialias,
+        powerPreference: "high-performance"
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(GRAPHICS_QUALITY.pixelRatio);
+    renderer.shadowMap.enabled = GRAPHICS_QUALITY.shadows;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    document.body.appendChild(renderer.domElement);
+
+    // Post Processing (Bloom)
+    if (GRAPHICS_QUALITY.bloom) {
+        setupPostProcessing();
+    }
+
+    // Controls
+    if (!isMobile) {
+        controls = new THREE.PointerLockControls(camera, document.body);
+        controls.addEventListener('lock', () => {
+            document.getElementById('menu').style.display = 'none';
+            isGameActive = true;
+        });
+        controls.addEventListener('unlock', () => {
+            if (isGameActive) showPauseMenu();
+        });
+        document.getElementById('crosshair').style.display = 'block';
+    } else {
+        setupMobileControls();
+        document.getElementById('mobileControls').style.display = 'block';
+        document.getElementById('lookIndicator').style.display = 'block';
+        document.getElementById('mobileMenuBtn').style.display = 'flex';
+        document.getElementById('interactionPrompt').innerHTML = 'Toque no <b style="color:#4169E1;">AZUL</b> para interagir';
+    }
+
+    // Realistic Lighting Setup
+    setupRealisticLighting();
+
+    // Ground with texture-like appearance
+    createRealisticGround();
+
+    // Roads
+    createRoads();
+
+    // Raycaster
+    raycaster = new THREE.Raycaster();
+
+    // Generate World
+    generateHouses();
+    generateTrees();
+    generateNPCs();
+    generateAnimals();
+    createLuis();
+    createInteractables();
+
+    // Event Listeners
+    if (!isMobile) {
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
+    }
+    window.addEventListener('resize', onWindowResize);
+
+    // Update HUD
+    document.getElementById('treeCount').textContent = trees.length;
+    document.getElementById('houseCount').textContent = houses.length;
+    document.getElementById('npcCount').textContent = npcs.length;
+    document.getElementById('animalCount').textContent = animals.length;
+
+    // Hide loading
+    setTimeout(() => {
+        document.getElementById('loading').style.opacity = '0';
+        setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+    }, 1500);
+
+    animate();
+}
+
+function setupPostProcessing() {
+    composer = new THREE.EffectComposer(renderer);
+    
+    const renderPass = new THREE.RenderPass(scene, camera);
+    composer.addPass(renderPass);
+    
+    const bloomPass = new THREE.UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        0.3, // strength
+        0.4, // radius
+        0.85 // threshold
+    );
+    composer.addPass(bloomPass);
+    
+    const gammaCorrection = new THREE.ShaderPass(THREE.GammaCorrectionShader);
+    composer.addPass(gammaCorrection);
+}
+
+function setupRealisticLighting() {
+    // Ambient light (soft fill)
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+    scene.add(ambientLight);
+
+    // Hemisphere light (sky/ground)
+    const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x362d1d, 0.6);
+    scene.add(hemiLight);
+
+    // Main sun light with realistic shadows
+    const sunLight = new THREE.DirectionalLight(0xfff4e5, 1.5);
+    sunLight.position.set(50, 100, 50);
+    sunLight.castShadow = true;
+    
+    // High quality shadow settings
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 200;
+    sunLight.shadow.camera.left = -100;
+    sunLight.shadow.camera.right = 100;
+    sunLight.shadow.camera.top = 100;
+    sunLight.shadow.camera.bottom = -100;
+    sunLight.shadow.bias = -0.0005;
+    sunLight.shadow.radius = 4;
+    
+    scene.add(sunLight);
+
+    // Rim light for depth
+    const rimLight = new THREE.DirectionalLight(0x4169E1, 0.3);
+    rimLight.position.set(-50, 50, -50);
+    scene.add(rimLight);
+}
+
+function createRealisticGround() {
+    // Create textured ground using vertex colors for variation
+    const groundGeometry = new THREE.PlaneGeometry(200, 200, 64, 64);
+    
+    // Add some noise to vertices for uneven terrain
+    const positions = groundGeometry.attributes.position;
+    for (let i = 0; i < positions.count; i++) {
+        const x = positions.getX(i);
+        const y = positions.getY(i);
+        const z = positions.getZ(i);
+        // Slight elevation variation
+        const height = Math.sin(x * 0.05) * Math.cos(y * 0.05) * 0.5 + 
+                      Math.random() * 0.1;
+        positions.setZ(i, z + height);
+    }
+    groundGeometry.computeVertexNormals();
+    
+    const groundMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x3d5c3d,
+        roughness: 0.9,
+        metalness: 0.1,
+    });
+    
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    
+    // Add grass blades (instanced mesh for performance)
+    createGrassBlades();
+}
+
+function createGrassBlades() {
+    const bladeGeo = new THREE.ConeGeometry(0.05, 0.3, 3);
+    bladeGeo.translate(0, 0.15, 0);
+    const bladeMat = new THREE.MeshLambertMaterial({ color: 0x4a7c4a });
+    
+    const count = 3000;
+    const grassMesh = new THREE.InstancedMesh(bladeGeo, bladeMat, count);
+    
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < count; i++) {
+        dummy.position.set(
+            (Math.random() - 0.5) * 180,
+            0,
+            (Math.random() - 0.5) * 180
+        );
+        // Avoid roads
+        if (Math.abs(dummy.position.x) < 8 || Math.abs(dummy.position.z) < 8) continue;
+        
+        dummy.rotation.y = Math.random() * Math.PI;
+        dummy.scale.setScalar(0.8 + Math.random() * 0.4);
+        dummy.updateMatrix();
+        grassMesh.setMatrixAt(i, dummy.matrix);
+    }
+    
+    grassMesh.receiveShadow = true;
+    scene.add(grassMesh);
+}
+
+function createRoads() {
+    const roadMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x6b5b4f,
+        roughness: 0.9,
+        metalness: 0.0
+    });
+    
+    // Main road with cobblestone effect
+    const road1 = new THREE.Mesh(new THREE.PlaneGeometry(200, 10), roadMaterial);
+    road1.rotation.x = -Math.PI / 2;
+    road1.position.y = 0.02;
+    road1.receiveShadow = true;
+    scene.add(road1);
+
+    const road2 = new THREE.Mesh(new THREE.PlaneGeometry(10, 200), roadMaterial);
+    road2.rotation.x = -Math.PI / 2;
+    road2.position.y = 0.02;
+    road2.receiveShadow = true;
+    scene.add(road2);
+}
+
+function generateHouses() {
+    const houseColors = [0x8B4513, 0xA0522D, 0xCD853F, 0xD2691E, 0xDEB887];
+    
+    for (let i = 0; i < 25; i++) {
+        const x = (Math.random() - 0.5) * 140;
+        const z = (Math.random() - 0.5) * 140;
+        
+        if (Math.abs(x) < 8 || Math.abs(z) < 8) continue;
+        
+        const houseGroup = new THREE.Group();
+        houseGroup.position.set(x, 0, z);
+        
+        const width = 6 + Math.random() * 4;
+        const depth = 6 + Math.random() * 4;
+        const height = 4 + Math.random() * 2;
+        
+        // House body with realistic material
+        const bodyGeo = new THREE.BoxGeometry(width, height, depth);
+        const bodyMat = new THREE.MeshStandardMaterial({ 
+            color: houseColors[Math.floor(Math.random() * houseColors.length)],
+            roughness: 0.8,
+            metalness: 0.1
+        });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = height / 2;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        houseGroup.add(body);
+        
+        // Detailed roof
+        const roofHeight = 3;
+        const roofGeo = new THREE.ConeGeometry(Math.max(width, depth) * 0.85, roofHeight, 4);
+        const roofMat = new THREE.MeshStandardMaterial({ 
+            color: 0x3a3a3a,
+            roughness: 0.9
+        });
+        const roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.y = height + roofHeight / 2;
+        roof.rotation.y = Math.PI / 4;
+        roof.castShadow = true;
+        houseGroup.add(roof);
+        
+        // Door with frame
+        const doorFrameGeo = new THREE.BoxGeometry(1.4, 2.4, 0.3);
+        const doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x3d2817 });
+        const doorFrame = new THREE.Mesh(doorFrameGeo, doorFrameMat);
+        doorFrame.position.set(0, 1.2, depth / 2 + 0.1);
+        houseGroup.add(doorFrame);
+        
+        const doorGeo = new THREE.BoxGeometry(1, 2.2, 0.1);
+        const doorMat = new THREE.MeshStandardMaterial({ 
+            color: 0x4a3c28,
+            roughness: 0.7
+        });
+        const door = new THREE.Mesh(doorGeo, doorMat);
+        door.position.set(0, 1.1, depth / 2 + 0.2);
+        houseGroup.add(door);
+        
+        // Windows with glass effect
+        const windowGeo = new THREE.BoxGeometry(1.2, 1.2, 0.15);
+        const windowMat = new THREE.MeshStandardMaterial({ 
+            color: 0x87CEEB,
+            roughness: 0.1,
+            metalness: 0.8,
+            emissive: 0x87CEEB,
+            emissiveIntensity: 0.2
+        });
+        
+        for (let w = 0; w < 3; w++) {
+            const windowFrame = new THREE.Mesh(
+                new THREE.BoxGeometry(1.4, 1.4, 0.1),
+                new THREE.MeshStandardMaterial({ color: 0x3d2817 })
+            );
+            windowFrame.position.set((w - 1) * 2.5, 2.5, depth / 2 + 0.1);
+            houseGroup.add(windowFrame);
+            
+            const windowMesh = new THREE.Mesh(windowGeo, windowMat);
+            windowMesh.position.set((w - 1) * 2.5, 2.5, depth / 2 + 0.15);
+            houseGroup.add(windowMesh);
         }
         
-        function showError(msg) {
-            errorDiv.style.display = 'block';
-            errorDiv.textContent = '❌ ' + msg;
-            loadingText.textContent = 'Erro de carregamento';
+        // Chimney
+        if (Math.random() > 0.5) {
+            const chimGeo = new THREE.BoxGeometry(0.8, 2.5, 0.8);
+            const chimMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+            const chimney = new THREE.Mesh(chimGeo, chimMat);
+            chimney.position.set(width / 3, height + 1.2, -depth / 4);
+            chimney.castShadow = true;
+            houseGroup.add(chimney);
+            
+            // Smoke particles
+            if (!isMobile) {
+                createSmoke(houseGroup, chimney.position);
+            }
         }
         
-        function updateProgress(percent, text) {
-            loadingProgress.style.width = percent + '%';
-            if (text) loadingText.textContent = text;
-        }
+        houseGroup.userData = {
+            type: 'house',
+            id: i,
+            interior: createHouseInterior(width, height, depth)
+        };
         
-        function initWorld() {
-            try {
-                updateProgress(10, 'Criando cena 3D...');
-                
-                // Cena
-                scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x87CEEB);
-                scene.fog = new THREE.Fog(0x87CEEB, 20, 300);
-                
-                // Câmera
-                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                camera.position.set(0, 2, 10);
-                
-                // Renderer
-                renderer = new THREE.WebGLRenderer({ antialias: true });
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.shadowMap.enabled = true;
-                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                document.body.appendChild(renderer.domElement);
-                
-                updateProgress(20, 'Adicionando iluminação...');
-                
-                // Luzes
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-                scene.add(ambientLight);
-                
-                const sunLight = new THREE.DirectionalLight(0xffffff, 1);
-                sunLight.position.set(50, 100, 50);
-                sunLight.castShadow = true;
-                sunLight.shadow.mapSize.width = 2048;
-                sunLight.shadow.mapSize.height = 2048;
-                sunLight.shadow.camera.near = 0.5;
-                sunLight.shadow.camera.far = 500;
-                sunLight.shadow.camera.left = -200;
-                sunLight.shadow.camera.right = 200;
-                sunLight.shadow.camera.top = 200;
-                sunLight.shadow.camera.bottom = -200;
-                scene.add(sunLight);
-                
-                updateProgress(30, 'Gerando terreno...');
-                
-                // Terreno simples mas eficaz
-                const groundGeometry = new THREE.PlaneGeometry(400, 400, 100, 100);
-                
-                // Elevações suaves
-                const positions = groundGeometry.attributes.position;
-                for (let i = 0; i < positions.count; i++) {
-                    const x = positions.getX(i);
-                    const y = positions.getY(i);
-                    const z = Math.sin(x * 0.02) * Math.cos(y * 0.02) * 3;
-                    positions.setZ(i, z);
-                }
-                groundGeometry.computeVertexNormals();
-                
-                const groundMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0x3d7c47,
+        scene.add(houseGroup);
+        houses.push(houseGroup);
+        interactables.push({ mesh: door, type: 'door', house: houseGroup });
+    }
+}
+
+function createSmoke(parent, pos) {
+    // Simple smoke effect using particles could be added here
+    // For now, just a placeholder for future enhancement
+}
+
+function createHouseInterior(width, height, depth) {
+    const interior = new THREE.Group();
+    
+    // Floor
+    const floorGeo = new THREE.PlaneGeometry(width - 0.2, depth - 0.2);
+    const floorMat = new THREE.MeshStandardMaterial({ 
+        color: 0x5c4033,
+        roughness: 0.8
+    });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0.01;
+    interior.add(floor);
+    
+    // Sofa
+    const sofaGroup = new THREE.Group();
+    const sofaBase = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 0.6, 1),
+        new THREE.MeshStandardMaterial({ color: 0x8B0000, roughness: 0.9 })
+    );
+    sofaBase.position.y = 0.3;
+    sofaGroup.add(sofaBase);
+    
+    const sofaBack = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 0.8, 0.3),
+        new THREE.MeshStandardMaterial({ color: 0x8B0000, roughness: 0.9 })
+    );
+    sofaBack.position.set(0, 0.7, -0.35);
+    sofaGroup.add(sofaBack);
+    
+    sofaGroup.position.set(-width/4, 0, 0);
+    interior.add(sofaGroup);
+    
+    // TV
+    const tvStand = new THREE.Mesh(
+        new THREE.BoxGeometry(1.8, 0.6, 0.8),
+        new THREE.MeshStandardMaterial({ color: 0x3d2817 })
+    );
+    tvStand.position.set(0, 0.3, -depth/2 + 0.5);
+    interior.add(tvStand);
+    
+    const tv = new THREE.Mesh(
+        new THREE.BoxGeometry(1.5, 0.9, 0.1),
+        new THREE.MeshStandardMaterial({ 
+            color: 0x111111,
+            roughness: 0.2,
+            metalness: 0.5
+        })
+    );
+    tv.position.set(0, 1.2, -depth/2 + 0.9);
+    interior.add(tv);
+    
+    // Bed
+    const bedFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 0.5, 3.2),
+        new THREE.MeshStandardMaterial({ color: 0x4a3728 })
+    );
+    bedFrame.position.set(width/3, 0.25, -depth/4);
+    interior.add(bedFrame);
+    
+    const mattress = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 0.3, 3),
+        new THREE.MeshStandardMaterial({ color: 0xF5F5DC, roughness: 1 })
+    );
+    mattress.position.set(width/3, 0.65, -depth/4);
+    interior.add(mattress);
+    
+    // Fridge
+    const fridge = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 2.2, 1),
+        new THREE.MeshStandardMaterial({ 
+            color: 0xC0C0C0,
+            roughness: 0.3,
+            metalness: 0.6
+        })
+    );
+    fridge.position.set(-width/2 + 0.6, 1.1, -depth/2 + 0.6);
+    interior.add(fridge);
+    
+    return interior;
+}
+
+function generateTrees() {
+    const treeTypes = ['oak', 'pine', 'birch'];
+    
+    for (let i = 0; i < 150; i++) {
+        const x = (Math.random() - 0.5) * 190;
+        const z = (Math.random() - 0.5) * 190;
+        
+        if ((Math.abs(x) < 20 && Math.abs(z) < 20) || Math.abs(x) < 8 || Math.abs(z) < 8) continue;
+        
+        const treeGroup = new THREE.Group();
+        treeGroup.position.set(x, 0, z);
+        
+        const scale = 0.8 + Math.random() * 0.7;
+        treeGroup.scale.set(scale, scale, scale);
+        
+        const type = treeTypes[Math.floor(Math.random() * treeTypes.length)];
+        
+        // Trunk with realistic material
+        const trunkGeo = new THREE.CylinderGeometry(0.25, 0.4, 2.5, 8);
+        const trunkMat = new THREE.MeshStandardMaterial({ 
+            color: 0x4a3728,
+            roughness: 0.9,
+            bumpScale: 0.1
+        });
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        trunk.position.y = 1.25;
+        trunk.castShadow = true;
+        trunk.receiveShadow = true;
+        treeGroup.add(trunk);
+        
+        // Leaves based on type with realistic materials
+        if (type === 'oak') {
+            const leavesGeo = new THREE.DodecahedronGeometry(2.2);
+            const leavesMat = new THREE.MeshStandardMaterial({ 
+                color: 0x228B22,
+                roughness: 0.8,
+                metalness: 0.0
+            });
+            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+            leaves.position.y = 3.5;
+            leaves.castShadow = true;
+            treeGroup.add(leaves);
+        } else if (type === 'pine') {
+            for (let j = 0; j < 4; j++) {
+                const coneGeo = new THREE.ConeGeometry(2 - j * 0.3, 2.5, 8);
+                const coneMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x0F4F0F,
                     roughness: 0.8
                 });
-                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-                ground.rotation.x = -Math.PI / 2;
-                ground.receiveShadow = true;
-                scene.add(ground);
-                
-                updateProgress(40, 'Plantando árvores...');
-                
-                // Árvores otimizadas
-                const treeCount = 100;
-                for (let i = 0; i < treeCount; i++) {
-                    createSimpleTree();
-                }
-                
-                updateProgress(50, 'Construindo casas...');
-                
-                // Casas
-                createHouse(0, 0, true); // Casa do Luis
-                createHouse(30, 0);
-                createHouse(-30, 0);
-                createHouse(0, 30);
-                createHouse(0, -30);
-                
-                updateProgress(60, 'Criando animais...');
-                
-                // Animais
-                for (let i = 0; i < 20; i++) {
-                    createAnimal();
-                }
-                
-                updateProgress(70, 'Populando com NPCs...');
-                
-                // Luis
-                createLuis(5, 5);
-                
-                // Outros NPCs
-                for (let i = 0; i < 20; i++) {
-                    createNPC();
-                }
-                
-                updateProgress(80, 'Configurando controles...');
-                
-                // Controles
-                setupControls();
-                
-                updateProgress(100, 'Pronto!');
-                
-                // Mostrar botão de iniciar
-                setTimeout(() => {
-                    startButton.style.display = 'block';
-                    loadingText.textContent = 'Mundo criado com sucesso!';
-                }, 500);
-                
-            } catch (e) {
-                showError('Erro: ' + e.message);
-                console.error(e);
+                const cone = new THREE.Mesh(coneGeo, coneMat);
+                cone.position.y = 2.5 + j * 1.5;
+                cone.castShadow = true;
+                treeGroup.add(cone);
             }
-        }
-        
-        function createSimpleTree() {
-            const group = new THREE.Group();
-            
-            // Tronco
-            const trunk = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.4, 0.6, 6, 8),
-                new THREE.MeshStandardMaterial({ color: 0x4a3728 })
-            );
-            trunk.position.y = 3;
-            trunk.castShadow = true;
-            group.add(trunk);
-            
-            // Folhas - 3 camadas
-            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2d5016 });
-            
-            for (let i = 0; i < 3; i++) {
-                const leaves = new THREE.Mesh(
-                    new THREE.ConeGeometry(3.5 - i * 0.8, 3, 8),
-                    leavesMat
-                );
-                leaves.position.y = 7 + i * 2;
-                leaves.castShadow = true;
-                group.add(leaves);
-            }
-            
-            // Posição aleatória (evitando centro)
-            let x, z;
-            do {
-                x = (Math.random() - 0.5) * 300;
-                z = (Math.random() - 0.5) * 300;
-            } while (Math.abs(x) < 20 && Math.abs(z) < 20);
-            
-            group.position.set(x, 0, z);
-            const scale = 0.8 + Math.random() * 0.4;
-            group.scale.set(scale, scale, scale);
-            
-            scene.add(group);
-        }
-        
-        function createHouse(x, z, isLuisHouse = false) {
-            const house = new THREE.Group();
-            
-            // Paredes
-            const walls = new THREE.Mesh(
-                new THREE.BoxGeometry(12, 8, 10),
-                new THREE.MeshStandardMaterial({ color: isLuisHouse ? 0x4a90e2 : 0xe8dcc5 })
-            );
-            walls.position.y = 4;
-            walls.castShadow = true;
-            walls.receiveShadow = true;
-            house.add(walls);
-            
-            // Telhado
-            const roof = new THREE.Mesh(
-                new THREE.ConeGeometry(9, 5, 4),
-                new THREE.MeshStandardMaterial({ color: 0x8b4513 })
-            );
-            roof.position.y = 10.5;
-            roof.rotation.y = Math.PI / 4;
-            roof.scale.set(1, 1, 0.8);
-            roof.castShadow = true;
-            house.add(roof);
-            
-            // Porta
-            const door = new THREE.Mesh(
-                new THREE.BoxGeometry(2.5, 5, 0.2),
-                new THREE.MeshStandardMaterial({ color: 0x4a3728 })
-            );
-            door.position.set(0, 2.5, 5.1);
-            house.add(door);
-            
-            // Janelas
-            const windowMat = new THREE.MeshStandardMaterial({ 
-                color: 0x87ceeb,
-                transparent: true,
-                opacity: 0.6
+        } else {
+            const leavesGeo = new THREE.SphereGeometry(2, 8, 6);
+            const leavesMat = new THREE.MeshStandardMaterial({ 
+                color: 0x90EE90,
+                roughness: 0.8
             });
-            
-            const w1 = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 0.2), windowMat);
-            w1.position.set(-3, 5, 5.1);
-            house.add(w1);
-            
-            const w2 = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 0.2), windowMat);
-            w2.position.set(3, 5, 5.1);
-            house.add(w2);
-            
-            house.position.set(x, 0, z);
-            scene.add(house);
-            
-            // Interior básico
-            const interior = new THREE.Group();
-            
-            // Chão
-            const floor = new THREE.Mesh(
-                new THREE.PlaneGeometry(10, 8),
-                new THREE.MeshStandardMaterial({ color: 0x8b7355 })
-            );
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.y = 0.1;
-            interior.add(floor);
-            
-            // Sofá
-            const sofa = new THREE.Mesh(
-                new THREE.BoxGeometry(4, 1, 2),
-                new THREE.MeshStandardMaterial({ color: 0x8b0000 })
-            );
-            sofa.position.set(-2, 0.5, 2);
-            interior.add(sofa);
-            
-            // Cama
-            const bed = new THREE.Mesh(
-                new THREE.BoxGeometry(3, 1, 4),
-                new THREE.MeshStandardMaterial({ color: 0xffffff })
-            );
-            bed.position.set(3, 0.5, -2);
-            interior.add(bed);
-            
-            // Trigger interação
-            const trigger = new THREE.Mesh(
-                new THREE.BoxGeometry(3, 6, 3),
-                new THREE.MeshBasicMaterial({ visible: false })
-            );
-            trigger.position.set(x, 3, z + 6);
-            trigger.userData = { type: 'door', house: house, interior: interior, x, z };
-            scene.add(trigger);
-            interactables.push(trigger);
-            
-            buildings.push({ mesh: house, interior, x, z });
+            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+            leaves.position.y = 3.2;
+            leaves.castShadow = true;
+            treeGroup.add(leaves);
         }
         
-        function createLuis(x, z) {
-            const luis = new THREE.Group();
-            
-            // Corpo azul
-            const body = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.4, 0.4, 1.8, 8),
-                new THREE.MeshStandardMaterial({ color: 0x4a90e2 })
-            );
-            body.position.y = 1.8;
+        scene.add(treeGroup);
+        trees.push(treeGroup);
+    }
+}
+
+function generateNPCs() {
+    for (let i = 0; i < 30; i++) {
+        const x = (Math.random() - 0.5) * 100;
+        const z = (Math.random() - 0.5) * 100;
+        
+        if (Math.abs(x) < 8 || Math.abs(z) < 8) continue;
+        
+        const npcGroup = new THREE.Group();
+        npcGroup.position.set(x, 0, z);
+        
+        // Body with PBR material
+        const bodyGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.7, 8);
+        const color = new THREE.Color().setHSL(Math.random(), 0.5, 0.4);
+        const bodyMat = new THREE.MeshStandardMaterial({ 
+            color: color,
+            roughness: 0.7,
+            metalness: 0.1
+        });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.85;
+        body.castShadow = true;
+        npcGroup.add(body);
+        
+        // Head
+        const headGeo = new THREE.SphereGeometry(0.25, 16, 16);
+        const headMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffccaa,
+            roughness: 0.5
+        });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 1.8;
+        head.castShadow = true;
+        npcGroup.add(head);
+        
+        // Arms
+        const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.8);
+        const armMat = new THREE.MeshStandardMaterial({ 
+            color: color,
+            roughness: 0.7
+        });
+        
+        const leftArm = new THREE.Mesh(armGeo, armMat);
+        leftArm.position.set(-0.4, 1.2, 0);
+        leftArm.rotation.z = 0.3;
+        leftArm.castShadow = true;
+        npcGroup.add(leftArm);
+        
+        const rightArm = new THREE.Mesh(armGeo, armMat);
+        rightArm.position.set(0.4, 1.2, 0);
+        rightArm.rotation.z = -0.3;
+        rightArm.castShadow = true;
+        npcGroup.add(rightArm);
+        
+        let dog = null;
+        if (Math.random() > 0.7) {
+            dog = createDog();
+            dog.position.set(1, 0, 1);
+            npcGroup.add(dog);
+        }
+        
+        let cart = null;
+        if (Math.random() > 0.85) {
+            cart = createCart();
+            cart.position.set(-1.5, 0, 0);
+            npcGroup.add(cart);
+        }
+        
+        npcGroup.userData = {
+            type: 'npc',
+            id: i,
+            name: npcNames[i],
+            function: npcFunctions[Math.floor(Math.random() * npcFunctions.length)],
+            speed: 0.5 + Math.random() * 1.5,
+            targetX: x + (Math.random() - 0.5) * 20,
+            targetZ: z + (Math.random() - 0.5) * 20,
+            waitTime: 0,
+            dog: dog,
+            cart: cart,
+            dialogue: [
+                `Olá, sou ${npcNames[i]}.`,
+                "Valedorn é um lugar pacífico.",
+                "Você é novo por aqui?",
+                "Cuidado com os lobos na floresta leste.",
+                "O prefeito está procurando aventureiros."
+            ]
+        };
+        
+        scene.add(npcGroup);
+        npcs.push(npcGroup);
+        interactables.push({ mesh: body, type: 'npc', npc: npcGroup });
+    }
+}
+
+function createDog() {
+    const dogGroup = new THREE.Group();
+    
+    const bodyGeo = new THREE.BoxGeometry(0.4, 0.4, 0.8);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.3;
+    body.castShadow = true;
+    dogGroup.add(body);
+    
+    const headGeo = new THREE.BoxGeometry(0.3, 0.3, 0.35);
+    const head = new THREE.Mesh(headGeo, bodyMat);
+    head.position.set(0, 0.6, 0.3);
+    head.castShadow = true;
+    dogGroup.add(head);
+    
+    return dogGroup;
+}
+
+function createCart() {
+    const cartGroup = new THREE.Group();
+    
+    const baseGeo = new THREE.BoxGeometry(1.2, 0.3, 1.5);
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+    const base = new THREE.Mesh(baseGeo, baseMat);
+    base.position.y = 0.4;
+    base.castShadow = true;
+    cartGroup.add(base);
+    
+    const wheelGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.1, 8);
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    
+    const positions = [[-0.5, 0.25, 0.5], [0.5, 0.25, 0.5], [-0.5, 0.25, -0.5], [0.5, 0.25, -0.5]];
+    positions.forEach(pos => {
+        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+        wheel.rotation.x = Math.PI / 2;
+        wheel.position.set(...pos);
+        cartGroup.add(wheel);
+    });
+    
+    return cartGroup;
+}
+
+function generateAnimals() {
+    const animalTypes = [
+        { type: 'cow', color: 0xFFFFFF, size: 1.2 },
+        { type: 'horse', color: 0x8B4513, size: 1.4 },
+        { type: 'sheep', color: 0xF5F5DC, size: 0.8 },
+        { type: 'chicken', color: 0xFFFFFF, size: 0.3 },
+        { type: 'cat', color: 0xFFA500, size: 0.4 }
+    ];
+    
+    for (let i = 0; i < 40; i++) {
+        const x = (Math.random() - 0.5) * 120;
+        const z = (Math.random() - 0.5) * 120;
+        
+        if (Math.abs(x) < 10 && Math.abs(z) < 10) continue;
+        
+        const animalData = animalTypes[Math.floor(Math.random() * animalTypes.length)];
+        const animalGroup = new THREE.Group();
+        animalGroup.position.set(x, 0, z);
+        
+        if (animalData.type === 'cow') {
+            const bodyGeo = new THREE.BoxGeometry(1.2, 1, 2);
+            const bodyMat = new THREE.MeshStandardMaterial({ 
+                color: animalData.color,
+                roughness: 0.9
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.8;
             body.castShadow = true;
-            luis.add(body);
+            animalGroup.add(body);
             
-            // Cabeça
-            const head = new THREE.Mesh(
-                new THREE.SphereGeometry(0.35, 16, 16),
-                new THREE.MeshStandardMaterial({ color: 0xffdbac })
-            );
-            head.position.y = 3;
-            luis.add(head);
-            
-            // Cabelo cacheado (esferas)
-            const hairGroup = new THREE.Group();
-            for (let i = 0; i < 20; i++) {
-                const curl = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.08, 8, 8),
-                    new THREE.MeshStandardMaterial({ color: 0x000000 })
-                );
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.random() * Math.PI * 0.5;
-                curl.position.set(
-                    0.32 * Math.sin(phi) * Math.cos(theta),
-                    0.32 * Math.cos(phi),
-                    0.32 * Math.sin(phi) * Math.sin(theta)
-                );
-                hairGroup.add(curl);
-            }
-            hairGroup.position.y = 3.1;
-            luis.add(hairGroup);
-            
-            // Óculos
-            const glasses = new THREE.Group();
-            const frameMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-            
-            const leftEye = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.02, 8, 16), frameMat);
-            leftEye.position.set(-0.15, 0, 0.25);
-            glasses.add(leftEye);
-            
-            const rightEye = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.02, 8, 16), frameMat);
-            rightEye.position.set(0.15, 0, 0.25);
-            glasses.add(rightEye);
-            
-            const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), frameMat);
-            bridge.position.set(0, 0, 0.25);
-            glasses.add(bridge);
-            
-            glasses.position.y = 3;
-            luis.add(glasses);
-            
-            // Pernas
-            const legGeo = new THREE.CylinderGeometry(0.15, 0.12, 1.8);
-            const legMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-            
-            const leftLeg = new THREE.Mesh(legGeo, legMat);
-            leftLeg.position.set(-0.25, 0.9, 0);
-            luis.add(leftLeg);
-            
-            const rightLeg = new THREE.Mesh(legGeo, legMat);
-            rightLeg.position.set(0.25, 0.9, 0);
-            luis.add(rightLeg);
-            
-            // Braços
-            const armGeo = new THREE.CylinderGeometry(0.12, 0.1, 1.6);
-            const armMat = new THREE.MeshStandardMaterial({ color: 0x4a90e2 });
-            
-            const leftArm = new THREE.Mesh(armGeo, armMat);
-            leftArm.position.set(-0.6, 2.2, 0);
-            leftArm.rotation.z = 0.3;
-            luis.add(leftArm);
-            
-            const rightArm = new THREE.Mesh(armGeo, armMat);
-            rightArm.position.set(0.6, 2.2, 0);
-            rightArm.rotation.z = -0.3;
-            luis.add(rightArm);
-            
-            luis.position.set(x, 0, z);
-            luis.userData = {
-                type: 'npc',
-                isLuis: true,
-                name: 'Luis',
-                dialogue: {
-                    greeting: [
-                        "E aí, como vai a jornada?",
-                        "Tá com medo? Normal. Mas eu tô aqui.",
-                        "Prefiro ser o amigo certo... do que o rei errado."
-                    ],
-                    topics: {
-                        'Sobre a amizade': "Não sou o herói da profecia, mas também sei que nenhum herói vence sozinho.",
-                        'Sobre escolhas': "Você não é o escolhido... você é quem escolhe ficar. Isso é mais raro."
-                    }
-                }
-            };
-            
-            scene.add(luis);
-            npcs.push(luis);
-            
-            // Trigger
-            const trigger = new THREE.Mesh(
-                new THREE.BoxGeometry(1.5, 4, 1.5),
-                new THREE.MeshBasicMaterial({ visible: false })
-            );
-            trigger.position.copy(luis.position);
-            trigger.userData = { type: 'npc', npc: luis };
-            scene.add(trigger);
-            interactables.push(trigger);
-        }
-        
-        function createNPC() {
-            const npc = new THREE.Group();
-            
-            const colors = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0xa8e6cf, 0xfd79a8];
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            
-            // Corpo
-            const body = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.4, 0.4, 1.8, 8),
-                new THREE.MeshStandardMaterial({ color: color })
-            );
-            body.position.y = 1.8;
+            const headGeo = new THREE.BoxGeometry(0.6, 0.6, 0.8);
+            const head = new THREE.Mesh(headGeo, bodyMat);
+            head.position.set(0, 1.4, 1);
+            head.castShadow = true;
+            animalGroup.add(head);
+        } else if (animalData.type === 'horse') {
+            const bodyGeo = new THREE.BoxGeometry(1, 1.2, 2.2);
+            const bodyMat = new THREE.MeshStandardMaterial({ 
+                color: animalData.color,
+                roughness: 0.8
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 1.1;
             body.castShadow = true;
-            npc.add(body);
+            animalGroup.add(body);
             
-            // Cabeça
-            const head = new THREE.Mesh(
-                new THREE.SphereGeometry(0.35, 16, 16),
-                new THREE.MeshStandardMaterial({ color: 0xffdbac })
-            );
-            head.position.y = 3;
-            npc.add(head);
-            
-            // Cabelo
-            const hair = new THREE.Mesh(
-                new THREE.SphereGeometry(0.37, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2.5),
-                new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff })
-            );
-            hair.position.y = 3.05;
-            npc.add(hair);
-            
-            // Pernas
-            const legMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-            const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 1.8), legMat);
-            leftLeg.position.set(-0.25, 0.9, 0);
-            npc.add(leftLeg);
-            
-            const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 1.8), legMat);
-            rightLeg.position.set(0.25, 0.9, 0);
-            npc.add(rightLeg);
-            
-            const x = (Math.random() - 0.5) * 150;
-            const z = (Math.random() - 0.5) * 150;
-            npc.position.set(x, 0, z);
-            
-            npc.userData = {
-                type: 'npc',
-                isLuis: false,
-                name: ['Aldric', 'Beatrix', 'Cedric', 'Diana'][Math.floor(Math.random() * 4)],
-                behavior: 'idle',
-                timer: Math.random() * 10,
-                dialogue: {
-                    greeting: ['Olá!', 'Bom dia!', 'Oi!'],
-                    topics: { 'Clima': 'Lindo dia, não acha?' }
-                }
-            };
-            
-            scene.add(npc);
-            npcs.push(npc);
-            
-            const trigger = new THREE.Mesh(
-                new THREE.BoxGeometry(1.5, 4, 1.5),
-                new THREE.MeshBasicMaterial({ visible: false })
-            );
-            trigger.position.copy(npc.position);
-            trigger.userData = { type: 'npc', npc: npc };
-            scene.add(trigger);
-            interactables.push(trigger);
-        }
-        
-        function createAnimal() {
-            const group = new THREE.Group();
-            const types = ['vaca', 'cachorro', 'gato', 'cavalo'];
-            const type = types[Math.floor(Math.random() * types.length)];
-            
-            let color, size;
-            switch(type) {
-                case 'vaca': color = 0xffffff; size = 1.5; break;
-                case 'cachorro': color = 0x8b4513; size = 0.6; break;
-                case 'gato': color = 0xffa500; size = 0.4; break;
-                case 'cavalo': color = 0x8b4513; size = 1.8; break;
-            }
-            
-            const mat = new THREE.MeshStandardMaterial({ color: color });
-            
-            // Corpo
-            const body = new THREE.Mesh(new THREE.BoxGeometry(1.2 * size, size, 2 * size), mat);
-            body.position.y = size;
+            const headGeo = new THREE.BoxGeometry(0.5, 0.8, 1);
+            const head = new THREE.Mesh(headGeo, bodyMat);
+            head.position.set(0, 1.8, 1.4);
+            head.castShadow = true;
+            animalGroup.add(head);
+        } else if (animalData.type === 'cat') {
+            const bodyGeo = new THREE.BoxGeometry(0.4, 0.3, 0.7);
+            const bodyMat = new THREE.MeshStandardMaterial({ 
+                color: animalData.color,
+                roughness: 0.8
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.25;
             body.castShadow = true;
-            group.add(body);
-            
-            // Cabeça
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.8 * size, 0.8 * size, size), mat);
-            head.position.set(0, size * 1.5, size * 1.2);
-            group.add(head);
-            
-            // Pernas
-            for (let i = 0; i < 4; i++) {
-                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.15 * size, 0.1 * size, size), mat);
-                leg.position.set(
-                    (i % 2 === 0 ? -0.4 : 0.4) * size,
-                    size * 0.5,
-                    (i < 2 ? -0.6 : 0.6) * size
-                );
-                group.add(leg);
+            animalGroup.add(body);
+        } else {
+            const bodyGeo = new THREE.BoxGeometry(animalData.size, animalData.size * 0.8, animalData.size * 1.5);
+            const bodyMat = new THREE.MeshStandardMaterial({ 
+                color: animalData.color,
+                roughness: 0.9
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = animalData.size * 0.5;
+            body.castShadow = true;
+            animalGroup.add(body);
+        }
+        
+        animalGroup.userData = {
+            type: 'animal',
+            animalType: animalData.type,
+            id: i,
+            state: 'idle',
+            timer: Math.random() * 10
+        };
+        
+        scene.add(animalGroup);
+        animals.push(animalGroup);
+        interactables.push({ mesh: animalGroup.children[0], type: 'animal', animal: animalGroup });
+    }
+}
+
+function createLuis() {
+    luis = new THREE.Group();
+    luis.position.set(2, 0, 2);
+    
+    // Body - White clothing with realistic material
+    const bodyGeo = new THREE.CylinderGeometry(0.32, 0.32, 1.7, 8);
+    const bodyMat = new THREE.MeshStandardMaterial({ 
+        color: 0xF5F5F5,
+        roughness: 0.6,
+        metalness: 0.1
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.85;
+    body.castShadow = true;
+    luis.add(body);
+    
+    // Curly hair (multiple spheres)
+    const hairGroup = new THREE.Group();
+    const hairColor = 0x2C1810;
+    const hairMat = new THREE.MeshStandardMaterial({ 
+        color: hairColor,
+        roughness: 0.9
+    });
+    for (let i = 0; i < 12; i++) {
+        const hairGeo = new THREE.SphereGeometry(0.1, 8, 8);
+        const hair = new THREE.Mesh(hairGeo, hairMat);
+        const angle = (i / 12) * Math.PI * 2;
+        const radius = 0.18;
+        hair.position.set(
+            Math.cos(angle) * radius,
+            2 + Math.sin(i * 0.8) * 0.08,
+            Math.sin(angle) * radius
+        );
+        hairGroup.add(hair);
+    }
+    luis.add(hairGroup);
+    
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.25, 16, 16);
+    const headMat = new THREE.MeshStandardMaterial({ 
+        color: 0xFDBCB4,
+        roughness: 0.5
+    });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.y = 1.8;
+    head.castShadow = true;
+    luis.add(head);
+    
+    // Glasses (blue frames with glass)
+    const glassesFrameGeo = new THREE.BoxGeometry(0.38, 0.1, 0.05);
+    const glassesFrameMat = new THREE.MeshStandardMaterial({ 
+        color: 0x4169E1,
+        metalness: 0.3,
+        roughness: 0.4
+    });
+    const glasses = new THREE.Mesh(glassesFrameGeo, glassesFrameMat);
+    glasses.position.set(0, 1.82, 0.2);
+    luis.add(glasses);
+    
+    // Arms
+    const armGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.8);
+    const armMat = new THREE.MeshStandardMaterial({ 
+        color: 0xF5F5F5,
+        roughness: 0.6
+    });
+    
+    const leftArm = new THREE.Mesh(armGeo, armMat);
+    leftArm.position.set(-0.42, 1.2, 0);
+    leftArm.rotation.z = 0.3;
+    leftArm.castShadow = true;
+    luis.add(leftArm);
+    
+    const rightArm = new THREE.Mesh(armGeo, armMat);
+    rightArm.position.set(0.42, 1.2, 0);
+    rightArm.rotation.z = -0.3;
+    rightArm.castShadow = true;
+    luis.add(rightArm);
+    
+    luis.userData = {
+        type: 'luis',
+        name: 'Luis',
+        dialogueIndex: 0,
+        following: true,
+        bondLevel: 1
+    };
+    
+    scene.add(luis);
+    interactables.push({ mesh: body, type: 'luis', luis: luis });
+    
+    document.getElementById('luisStatus').style.display = 'block';
+}
+
+function createInteractables() {
+    for (let i = 0; i < 10; i++) {
+        const x = (Math.random() - 0.5) * 80;
+        const z = (Math.random() - 0.5) * 80;
+        
+        if (Math.abs(x) < 8 || Math.abs(z) < 8) continue;
+        
+        const benchGroup = new THREE.Group();
+        
+        // Bench seat
+        const seatGeo = new THREE.BoxGeometry(2.2, 0.15, 0.7);
+        const woodMat = new THREE.MeshStandardMaterial({ 
+            color: 0x8B4513,
+            roughness: 0.8
+        });
+        const seat = new THREE.Mesh(seatGeo, woodMat);
+        seat.position.y = 0.5;
+        seat.castShadow = true;
+        benchGroup.add(seat);
+        
+        // Legs
+        const legGeo = new THREE.BoxGeometry(0.15, 0.5, 0.6);
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x2F4F4F });
+        
+        [-0.9, 0.9].forEach(xPos => {
+            const leg = new THREE.Mesh(legGeo, legMat);
+            leg.position.set(xPos, 0.25, 0);
+            leg.castShadow = true;
+            benchGroup.add(leg);
+        });
+        
+        benchGroup.position.set(x, 0, z);
+        scene.add(benchGroup);
+        
+        interactables.push({ mesh: seat, type: 'bench', action: 'sit' });
+    }
+}
+
+function setupMobileControls() {
+    const joystickZone = document.getElementById('joystickZone');
+    const joystickStick = document.getElementById('joystickStick');
+    const lookZone = document.getElementById('lookZone');
+    const interactBtn = document.getElementById('interactBtn');
+    const jumpBtn = document.getElementById('jumpBtn');
+    const crouchBtn = document.getElementById('crouchBtn');
+    
+    // Joystick
+    joystickZone.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = joystickZone.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        joystickActive = true;
+        updateJoystick(touch.clientX - centerX, touch.clientY - centerY);
+    }, { passive: false });
+    
+    joystickZone.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!joystickActive) return;
+        
+        const touch = e.touches[0];
+        const rect = joystickZone.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        updateJoystick(touch.clientX - centerX, touch.clientY - centerY);
+    }, { passive: false });
+    
+    joystickZone.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        joystickActive = false;
+        joystickStick.style.transform = 'translate(0px, 0px)';
+        joystickVector = { x: 0, y: 0 };
+        moveForward = moveBackward = moveLeft = moveRight = false;
+    }, { passive: false });
+    
+    // Look controls
+    lookZone.addEventListener('touchstart', (e) => {
+        if (e.target.closest('#actionButtons') || e.target.closest('#joystickZone')) return;
+        isLooking = true;
+        touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }, { passive: false });
+    
+    lookZone.addEventListener('touchmove', (e) => {
+        if (!isLooking) return;
+        e.preventDefault();
+        
+        const touch = e.touches[0];
+        const deltaX = (touch.clientX - touchStartPos.x) * 0.4;
+        const deltaY = (touch.clientY - touchStartPos.y) * 0.4;
+        
+        camera.rotation.y -= deltaX * 0.01;
+        camera.rotation.x -= deltaY * 0.01;
+        camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+        
+        touchStartPos = { x: touch.clientX, y: touch.clientY };
+    }, { passive: false });
+    
+    lookZone.addEventListener('touchend', () => {
+        isLooking = false;
+    }, { passive: false });
+    
+    // Action buttons
+    interactBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        checkInteraction();
+        interactBtn.style.transform = 'scale(0.92)';
+    }, { passive: false });
+    
+    interactBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        interactBtn.style.transform = 'scale(1)';
+    }, { passive: false });
+    
+    // Jump button
+    jumpBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        jumpBtn.style.transform = 'scale(0.92)';
+        // Jump logic could be added here
+    }, { passive: false });
+    
+    jumpBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        jumpBtn.style.transform = 'scale(1)';
+    }, { passive: false });
+    
+    // Crouch button
+    crouchBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        crouchBtn.style.transform = 'scale(0.92)';
+        camera.position.y = 1.0; // Crouch
+    }, { passive: false });
+    
+    crouchBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        crouchBtn.style.transform = 'scale(1)';
+        camera.position.y = 1.7; // Stand
+    }, { passive: false });
+}
+
+function updateJoystick(dx, dy) {
+    const maxDist = 35;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+    
+    const clampedDist = Math.min(distance, maxDist);
+    const clampedX = Math.cos(angle) * clampedDist;
+    const clampedY = Math.sin(angle) * clampedDist;
+    
+    const stick = document.getElementById('joystickStick');
+    stick.style.transform = `translate(${clampedX}px, ${clampedY}px)`;
+    
+    joystickVector.x = clampedX / maxDist;
+    joystickVector.y = clampedY / maxDist;
+    
+    const deadzone = 0.15;
+    moveForward = joystickVector.y < -deadzone;
+    moveBackward = joystickVector.y > deadzone;
+    moveLeft = joystickVector.x < -deadzone;
+    moveRight = joystickVector.x > deadzone;
+}
+
+function showPauseMenu() {
+    isGameActive = false;
+    document.getElementById('menu').style.display = 'flex';
+    document.querySelector('#menu h1').textContent = 'PAUSA';
+    document.querySelector('#menu .subtitle').innerHTML = 'Jogo pausado. Toque em Continuar.';
+    document.getElementById('startBtn').textContent = 'Continuar';
+    document.getElementById('desktopInstructions').style.display = 'none';
+    document.getElementById('mobileInstructions').style.display = 'none';
+    
+    if (!isMobile && controls) controls.unlock();
+}
+
+function startGame() {
+    if (isMobile) {
+        document.getElementById('menu').style.display = 'none';
+        isGameActive = true;
+    } else {
+        controls.lock();
+    }
+}
+
+function onKeyDown(event) {
+    switch (event.code) {
+        case 'ArrowUp':
+        case 'KeyW': moveForward = true; break;
+        case 'ArrowLeft':
+        case 'KeyA': moveLeft = true; break;
+        case 'ArrowDown':
+        case 'KeyS': moveBackward = true; break;
+        case 'ArrowRight':
+        case 'KeyD': moveRight = true; break;
+        case 'ShiftLeft': isRunning = true; break;
+        case 'KeyE': checkInteraction(); break;
+    }
+}
+
+function onKeyUp(event) {
+    switch (event.code) {
+        case 'ArrowUp':
+        case 'KeyW': moveForward = false; break;
+        case 'ArrowLeft':
+        case 'KeyA': moveLeft = false; break;
+        case 'ArrowDown':
+        case 'KeyS': moveBackward = false; break;
+        case 'ArrowRight':
+        case 'KeyD': moveRight = false; break;
+        case 'ShiftLeft': isRunning = false; break;
+    }
+}
+
+function checkInteraction() {
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    
+    if (intersects.length > 0) {
+        const obj = intersects[0].object;
+        const parent = obj.parent;
+        
+        const interactable = interactables.find(i => i.mesh === obj || i.mesh === parent);
+        
+        if (interactable) {
+            const distance = intersects[0].distance;
+            if (distance < 5) {
+                handleInteraction(interactable);
             }
-            
-            const x = (Math.random() - 0.5) * 200;
-            const z = (Math.random() - 0.5) * 200;
-            group.position.set(x, 0, z);
-            
-            group.userData = {
-                type: 'animal',
-                animalType: type,
-                state: 'idle',
-                timer: Math.random() * 5
-            };
-            
-            scene.add(group);
-            animals.push(group);
-            
-            const trigger = new THREE.Mesh(
-                new THREE.BoxGeometry(2 * size, 2 * size, 3 * size),
-                new THREE.MeshBasicMaterial({ visible: false })
-            );
-            trigger.position.copy(group.position);
-            trigger.userData = { type: 'animal', animal: group };
-            scene.add(trigger);
-            interactables.push(trigger);
         }
-        
-        function setupControls() {
-            // Pointer Lock
-            const canvas = renderer.domElement;
-            
-            canvas.addEventListener('click', () => {
-                if (!isLocked) {
-                    canvas.requestPointerLock();
-                }
-            });
-            
-            document.addEventListener('pointerlockchange', () => {
-                isLocked = document.pointerLockElement === canvas;
-            });
-            
-            // Teclado
-            document.addEventListener('keydown', (e) => {
-                switch(e.code) {
-                    case 'KeyW': moveForward = true; break;
-                    case 'KeyS': moveBackward = true; break;
-                    case 'KeyA': moveLeft = true; break;
-                    case 'KeyD': moveRight = true; break;
-                    case 'KeyE': interact(); break;
-                    case 'KeyF': toggleSit(); break;
-                    case 'Escape': document.exitPointerLock(); break;
-                }
-            });
-            
-            document.addEventListener('keyup', (e) => {
-                switch(e.code) {
-                    case 'KeyW': moveForward = false; break;
-                    case 'KeyS': moveBackward = false; break;
-                    case 'KeyA': moveLeft = false; break;
-                    case 'KeyD': moveRight = false; break;
-                }
-            });
-            
-            // Mouse look
-            document.addEventListener('mousemove', (e) => {
-                if (!isLocked) return;
-                
-                const sensitivity = 0.002;
-                camera.rotation.y -= e.movementX * sensitivity;
-                camera.rotation.x -= e.movementY * sensitivity;
-                camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
-            });
-        }
-        
-        function startGame() {
-            loadingScreen.classList.add('hidden');
-            ui.style.display = 'block';
-            
-            const canvas = renderer.domElement;
-            canvas.requestPointerLock();
-            
-            animate();
-        }
-        
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            const time = performance.now();
-            const delta = (time - prevTime) / 1000;
-            prevTime = time;
-            
-            if (isLocked) {
-                // Movimento
-                velocity.x -= velocity.x * 10 * delta;
-                velocity.z -= velocity.z * 10 * delta;
-                
-                direction.z = Number(moveForward) - Number(moveBackward);
-                direction.x = Number(moveRight) - Number(moveLeft);
-                
-                if (direction.length() > 0) direction.normalize();
-                
-                const speed = 100;
-                if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
-                
-                // Aplicar movimento na direção da câmera
-                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-                forward.y = 0;
-                forward.normalize();
-                
-                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-                right.y = 0;
-                right.normalize();
-                
-                camera.position.add(forward.multiplyScalar(-velocity.z * delta));
-                camera.position.add(right.multiplyScalar(-velocity.x * delta));
-                
-                // Gravidade simples
-                if (camera.position.y > 2) {
-                    velocity.y -= 9.8 * delta;
-                    camera.position.y += velocity.y * delta;
-                }
-                if (camera.position.y < 2) {
-                    camera.position.y = 2;
-                    velocity.y = 0;
-                }
-            }
-            
-            // Atualizar NPCs
-            npcs.forEach(npc => {
-                const data = npc.userData;
-                data.timer -= delta;
-                
-                if (data.timer <= 0) {
-                    data.behavior = ['idle', 'walk'][Math.floor(Math.random() * 2)];
-                    data.timer = 5 + Math.random() * 10;
-                    
-                    if (data.behavior === 'walk') {
-                        const angle = Math.random() * Math.PI * 2;
-                        data.targetX = npc.position.x + Math.cos(angle) * 20;
-                        data.targetZ = npc.position.z + Math.sin(angle) * 20;
-                    }
-                }
-                
-                if (data.behavior === 'walk' && data.targetX !== undefined) {
-                    const dx = data.targetX - npc.position.x;
-                    const dz = data.targetZ - npc.position.z;
-                    const dist = Math.sqrt(dx * dx + dz * dz);
-                    
-                    if (dist > 0.5) {
-                        const speed = 2 * delta;
-                        npc.position.x += (dx / dist) * speed;
-                        npc.position.z += (dz / dist) * speed;
-                        npc.lookAt(data.targetX, 0, data.targetZ);
-                    } else {
-                        data.behavior = 'idle';
-                    }
-                }
-                
-                // Atualizar trigger
-                const trigger = interactables.find(i => i.userData.npc === npc);
-                if (trigger) trigger.position.copy(npc.position);
-            });
-            
-            // Atualizar animais
-            animals.forEach(animal => {
-                const data = animal.userData;
-                data.timer -= delta;
-                
-                if (data.timer <= 0) {
-                    data.state = ['idle', 'walk'][Math.floor(Math.random() * 2)];
-                    data.timer = 3 + Math.random() * 5;
-                    
-                    if (data.state === 'walk') {
-                        const angle = Math.random() * Math.PI * 2;
-                        data.vx = Math.cos(angle) * 2;
-                        data.vz = Math.sin(angle) * 2;
-                    }
-                }
-                
-                if (data.state === 'walk') {
-                    animal.position.x += data.vx * delta;
-                    animal.position.z += data.vz * delta;
-                    animal.lookAt(
-                        animal.position.x + data.vx,
-                        0,
-                        animal.position.z + data.vz
-                    );
-                }
-                
-                // Limitar área
-                if (animal.position.length() > 180) {
-                    animal.position.setLength(180);
-                    data.vx *= -1;
-                    data.vz *= -1;
-                }
-                
-                const trigger = interactables.find(i => i.userData.animal === animal);
-                if (trigger) trigger.position.copy(animal.position);
-            });
-            
-            // Verificar interações
-            checkInteractions();
-            
-            renderer.render(scene, camera);
-        }
-        
-        function checkInteractions() {
-            const crosshair = document.getElementById('crosshair');
-            const prompt = document.getElementById('interactionPrompt');
-            
-            let closest = null;
-            let closestDist = Infinity;
-            
-            interactables.forEach(obj => {
-                const dist = obj.position.distanceTo(camera.position);
-                if (dist < 5 && dist < closestDist) {
-                    closest = obj;
-                    closestDist = dist;
-                }
-            });
-            
-            canInteract = closest;
-            
-            if (closest) {
-                crosshair.classList.add('interacting');
-                prompt.classList.add('visible');
-            } else {
-                crosshair.classList.remove('interacting');
-                prompt.classList.remove('visible');
-            }
-        }
-        
-        function interact() {
-            if (!canInteract) return;
-            
-            const data = canInteract.userData;
-            
-            if (data.type === 'door') {
-                enterHouse(data);
-            } else if (data.type === 'npc') {
-                startDialogue(data.npc);
-            } else if (data.type === 'animal') {
-                petAnimal(data.animal);
-            }
-        }
-        
-        let isInside = false;
-        
-        function enterHouse(data) {
-            if (!isInside) {
-                data.interior.visible = true;
-                camera.position.set(data.x, 2, data.z);
-                isInside = true;
-                showMessage("Você entrou na casa. Pressione E para sair.");
-            } else {
-                data.interior.visible = false;
-                camera.position.set(data.x, 2, data.z + 8);
-                isInside = false;
-                showMessage("Você saiu da casa.");
-            }
-        }
-        
-        function startDialogue(npc) {
-            document.exitPointerLock();
-            isLocked = false;
-            
-            const box = document.getElementById('dialogueBox');
-            const name = document.getElementById('speakerName');
-            const text = document.getElementById('dialogueText');
-            const options = document.getElementById('dialogueOptions');
-            
-            box.classList.add('active');
-            name.textContent = npc.userData.name;
-            
-            const greetings = npc.userData.dialogue.greeting;
-            text.textContent = greetings[Math.floor(Math.random() * greetings.length)];
-            
-            options.innerHTML = '';
-            
-            Object.entries(npc.userData.dialogue.topics).forEach(([topic, response]) => {
-                const btn = document.createElement('button');
-                btn.className = 'dialogue-option';
-                btn.textContent = topic;
-                btn.onclick = () => {
-                    text.textContent = response;
-                    if (npc.userData.isLuis) {
-                        friendshipLevel = Math.min(100, friendshipLevel + 5);
-                        document.getElementById('friendshipBar').style.width = friendshipLevel + '%';
-                    }
-                };
-                options.appendChild(btn);
-            });
-            
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'dialogue-option';
-            closeBtn.textContent = 'Adeus';
-            closeBtn.onclick = () => {
-                box.classList.remove('active');
-                renderer.domElement.requestPointerLock();
-            };
-            options.appendChild(closeBtn);
-        }
-        
-        function petAnimal(animal) {
-            const type = animal.userData.animalType;
-            const reactions = {
-                'vaca': 'Muuu! 🐄',
-                'cachorro': 'Au au! 🐕',
-                'gato': 'Miau! 🐱',
-                'cavalo': 'Relincho! 🐴'
-            };
-            showMessage(`Você acariciou o ${type}. ${reactions[type]}`);
-        }
-        
-        function toggleSit() {
-            if (camera.position.y < 2.5) {
-                camera.position.y = 2;
-            } else {
-                camera.position.y = 1.5;
-                showMessage("Você sentou. Pressione F para levantar.");
-            }
-        }
-        
-        function showMessage(msg) {
-            const prompt = document.getElementById('interactionPrompt');
-            prompt.textContent = msg;
-            prompt.classList.add('visible');
+    }
+}
+
+function handleInteraction(interactable) {
+    switch (interactable.type) {
+        case 'luis':
+            talkToLuis();
+            break;
+        case 'npc':
+            talkToNPC(interactable.npc);
+            break;
+        case 'animal':
+            interactWithAnimal(interactable.animal);
+            break;
+        case 'door':
+            enterHouse(interactable.house);
+            break;
+        case 'bench':
+            sitOnBench();
+            break;
+    }
+}
+
+function talkToLuis() {
+    if (currentDialogue) return;
+    const dialogue = luisDialogues[Math.floor(Math.random() * luisDialogues.length)];
+    showDialogue("Luis", dialogue);
+    luis.userData.bondLevel += 0.1;
+    updateLuisStatus();
+}
+
+function updateLuisStatus() {
+    const bond = luis.userData.bondLevel;
+    let level = "Conhecido";
+    if (bond > 2) level = "Amigo";
+    if (bond > 5) level = "Companheiro";
+    if (bond > 8) level = "Irmão de Alma";
+    document.getElementById('bondLevel').textContent = level;
+}
+
+function talkToNPC(npc) {
+    if (currentDialogue) return;
+    const dialogues = npc.userData.dialogue;
+    const dialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
+    showDialogue(npc.userData.name, dialogue);
+    npc.lookAt(camera.position.x, npc.position.y, camera.position.z);
+}
+
+function interactWithAnimal(animal) {
+    const type = animal.userData.animalType;
+    const messages = {
+        cow: ["A vaca muge suavemente.", "A vaca mastiga a grama.", "A vaca olha para você com curiosidade."],
+        horse: ["O cavalo relincha.", "O cavalo sacode a crina.", "O cavalo assenta o casco."],
+        sheep: ["A ovelha bala.", "A ovelha continua pastando.", "A ovelha pula levemente."],
+        chicken: ["A galinha cacareja.", "A galinha bicou o chão.", "A galinha abriu as asas."],
+        cat: ["O gato mia.", "O gato se espreguiça.", "O gato ronrona."]
+    };
+    const msgs = messages[type] || ["O animal olha para você."];
+    showDialogue(type.charAt(0).toUpperCase() + type.slice(1), msgs[Math.floor(Math.random() * msgs.length)]);
+}
+
+function enterHouse(house) {
+    if (playerInHouse) {
+        camera.position.set(house.position.x, 1.7, house.position.z + 8);
+        playerInHouse = false;
+        scene.remove(house.userData.interior);
+        showDialogue("Sistema", "Você saiu da casa.");
+    } else {
+        camera.position.set(house.position.x, 1.7, house.position.z);
+        playerInHouse = true;
+        house.userData.interior.position.copy(house.position);
+        scene.add(house.userData.interior);
+        showDialogue("Sistema", "Você entrou na casa. Toque no botão para sair.");
+    }
+}
+
+function sitOnBench() {
+    showDialogue("Sistema", "Você sentou no banco. Momento de descanso...");
+}
+
+function showDialogue(name, text) {
+    currentDialogue = { name, text };
+    const box = document.getElementById('dialogueBox');
+    const nameEl = document.getElementById('dialogueName');
+    const textEl = document.getElementById('dialogueText');
+    
+    nameEl.textContent = name;
+    box.style.display = 'block';
+    textEl.textContent = '';
+    
+    let i = 0;
+    clearInterval(typingInterval);
+    typingInterval = setInterval(() => {
+        if (i < text.length) {
+            textEl.textContent += text.charAt(i);
+            i++;
+        } else {
+            clearInterval(typingInterval);
             setTimeout(() => {
-                prompt.classList.remove('visible');
-                prompt.textContent = 'Pressione E para interagir';
+                box.style.display = 'none';
+                currentDialogue = null;
             }, 3000);
         }
+    }, 30);
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function updateNPCs(delta) {
+    npcs.forEach(npc => {
+        const data = npc.userData;
+        if (data.waitTime > 0) {
+            data.waitTime -= delta;
+            return;
+        }
         
-        // Resize
-        window.addEventListener('resize', () => {
-            if (camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+        const dx = data.targetX - npc.position.x;
+        const dz = data.targetZ - npc.position.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        
+        if (dist > 0.5) {
+            npc.position.x += (dx / dist) * data.speed * delta;
+            npc.position.z += (dz / dist) * data.speed * delta;
+            npc.lookAt(data.targetX, npc.position.y, data.targetZ);
+            if (data.dog) {
+                data.dog.position.x = 1 + Math.sin(Date.now() * 0.005) * 0.2;
             }
-        });
-    </script>
+        } else {
+            data.targetX = npc.position.x + (Math.random() - 0.5) * 30;
+            data.targetZ = npc.position.z + (Math.random() - 0.5) * 30;
+            data.waitTime = 2 + Math.random() * 5;
+            data.targetX = Math.max(-90, Math.min(90, data.targetX));
+            data.targetZ = Math.max(-90, Math.min(90, data.targetZ));
+        }
+    });
+}
+
+function updateAnimals(delta) {
+    animals.forEach(animal => {
+        const data = animal.userData;
+        data.timer -= delta;
+        
+        if (data.timer <= 0) {
+            data.state = ['idle', 'walking', 'eating'][Math.floor(Math.random() * 3)];
+            data.timer = 3 + Math.random() * 7;
+            if (data.state === 'walking') {
+                const angle = Math.random() * Math.PI * 2;
+                data.targetX = animal.position.x + Math.cos(angle) * 5;
+                data.targetZ = animal.position.z + Math.sin(angle) * 5;
+            }
+        }
+        
+        if (data.state === 'walking') {
+            const dx = data.targetX - animal.position.x;
+            const dz = data.targetZ - animal.position.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist > 0.3) {
+                animal.position.x += (dx / dist) * 0.5 * delta;
+                animal.position.z += (dz / dist) * 0.5 * delta;
+                animal.lookAt(data.targetX, animal.position.y, data.targetZ);
+            }
+        }
+    });
+}
+
+function updateLuis(delta) {
+    if (!luis || !luis.userData.following) return;
+    
+    const playerPos = camera.position;
+    const luisPos = luis.position;
+    
+    const dx = playerPos.x - luisPos.x;
+    const dz = playerPos.z - luisPos.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    
+    if (dist > 3) {
+        const speed = 3 * delta;
+        luis.position.x += (dx / dist) * speed;
+        luis.position.z += (dz / dist) * speed;
+        luis.lookAt(playerPos.x, luisPos.y, playerPos.z);
+        document.getElementById('luisState').textContent = 'Seguindo';
+    } else if (dist < 1.5) {
+        luis.position.x -= (dx / dist) * 1 * delta;
+        luis.position.z -= (dz / dist) * 1 * delta;
+        document.getElementById('luisState').textContent = 'Próximo';
+    } else {
+        document.getElementById('luisState').textContent = 'Pronto';
+    }
+}
+
+function checkProximity() {
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    const prompt = document.getElementById('interactionPrompt');
+    
+    if (intersects.length > 0 && intersects[0].distance < 5) {
+        const obj = intersects[0].object;
+        const parent = obj.parent;
+        const interactable = interactables.find(i => i.mesh === obj || i.mesh === parent);
+        
+        if (interactable) {
+            prompt.style.display = 'block';
+        } else {
+            prompt.style.display = 'none';
+        }
+    } else {
+        prompt.style.display = 'none';
+    }
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    if (!isGameActive) {
+        if (composer) composer.render();
+        else renderer.render(scene, camera);
+        return;
+    }
+    
+    const time = performance.now();
+    const delta = (time - prevTime) / 1000;
+    
+    // Movement
+    if (!isMobile && controls.isLocked) {
+        velocity.x -= velocity.x * 10.0 * delta;
+        velocity.z -= velocity.z * 10.0 * delta;
+        
+        direction.z = Number(moveForward) - Number(moveBackward);
+        direction.x = Number(moveRight) - Number(moveLeft);
+        direction.normalize();
+        
+        const speed = isRunning ? 150.0 : 100.0;
+        if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+        if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+        
+        controls.moveRight(-velocity.x * delta);
+        controls.moveForward(-velocity.z * delta);
+        camera.position.y = playerInHouse ? 1.7 : 1.7;
+    } else if (isMobile) {
+        if (moveForward || moveBackward || moveLeft || moveRight) {
+            const speed = 5 * delta * (isRunning ? 1.5 : 1);
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            forward.y = 0; forward.normalize();
+            
+            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            right.y = 0; right.normalize();
+            
+            if (moveForward) camera.position.addScaledVector(forward, speed);
+            if (moveBackward) camera.position.addScaledVector(forward, -speed);
+            if (moveLeft) camera.position.addScaledVector(right, -speed);
+            if (moveRight) camera.position.addScaledVector(right, speed);
+        }
+    }
+    
+    updateNPCs(delta);
+    updateAnimals(delta);
+    updateLuis(delta);
+    checkProximity();
+    
+    prevTime = time;
+    
+    if (composer) composer.render();
+    else renderer.render(scene, camera);
+}
+
+window.addEventListener('load', init);
+</script>
+
 </body>
 </html>
